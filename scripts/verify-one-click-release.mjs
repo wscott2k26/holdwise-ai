@@ -54,7 +54,8 @@ for (const forbidden of [
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 const packageLock = JSON.parse(fs.readFileSync(path.join(root, 'package-lock.json'), 'utf8'));
-if (packageJson.version !== '1.3.0' || packageLock.version !== '1.3.0' || packageLock.packages?.['']?.version !== '1.3.0') {
-  throw new Error('Package versions are not synchronized at 1.3.0.');
+const releaseVersion = packageJson.version;
+if (!releaseVersion || packageLock.version !== releaseVersion || packageLock.packages?.['']?.version !== releaseVersion) {
+  throw new Error(`Package versions are not synchronized at ${releaseVersion || 'the package version'}.`);
 }
 console.log('One-click GitLab → Codemagic → signed IPA → App Store Connect release validation passed.');

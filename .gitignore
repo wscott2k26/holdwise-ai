@@ -39,3 +39,5 @@ apple/appstore.env
 release/
 DerivedData/
 native/ios/HoldWiseAI/HoldWiseAI.xcodeproj/xcuserdata/
+
+.worktrees/

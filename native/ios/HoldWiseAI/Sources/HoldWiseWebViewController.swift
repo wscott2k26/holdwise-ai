@@ -1,16 +1,18 @@
 import UIKit
 import WebKit
 
-final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
+final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
     private var webView: WKWebView!
     private var storeKitBridge: HoldWiseStoreKitBridge!
     private let refreshControl = UIRefreshControl()
+    private let hapticHandlerName = "holdwiseHaptics"
 
     override func loadView() {
         let configuration = WKWebViewConfiguration()
         configuration.allowsInlineMediaPlayback = true
         configuration.mediaTypesRequiringUserActionForPlayback = []
         configuration.websiteDataStore = .default()
+        configuration.userContentController.add(self, name: hapticHandlerName)
 
         let nativeScript = """
         window.HoldWiseNative = Object.freeze({
@@ -45,6 +47,10 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
 
         storeKitBridge = HoldWiseStoreKitBridge(webView: webView)
         view = webView
+    }
+
+    deinit {
+        webView?.configuration.userContentController.removeScriptMessageHandler(forName: hapticHandlerName)
     }
 
     override func viewDidLoad() {
@@ -108,6 +114,18 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
         }
 
         decisionHandler(.allow)
+    }
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard message.name == hapticHandlerName, let type = message.body as? String else { return }
+        switch type {
+        case "success":
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+        case "warning":
+            UINotificationFeedbackGenerator().notificationOccurred(.warning)
+        default:
+            UISelectionFeedbackGenerator().selectionChanged()
+        }
     }
 
     func webView(

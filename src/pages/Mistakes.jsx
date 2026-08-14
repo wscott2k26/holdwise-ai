@@ -5,6 +5,7 @@ import { buildCard } from "@/lib/cards/deck";
 import { useEntitlement } from "@/lib/billing";
 import PremiumGate from "@/components/PremiumGate";
 import PlayingCard from "@/components/PlayingCard";
+import { loadMistakes, markMistakeReviewed } from "@/lib/mistakes";
 
 const FILTERS = ["All", "high-pair", "low-pair", "four-to-flush", "four-to-open-straight", "three-to-royal", "two-unsuited-high-cards", "redraw-all"];
 
@@ -12,15 +13,14 @@ export default function Mistakes() {
   const { isPremium } = useEntitlement();
   const navigate = useNavigate();
   const [filter, setFilter] = useState("All");
-  const mistakes = useMemo(() => {
-    try {
-      return JSON.parse(localStorage.getItem("holdwise_mistakes_v1") || "[]");
-    } catch {
-      return [];
-    }
-  }, []);
+  const mistakes = useMemo(() => loadMistakes(), []);
 
   const filtered = filter === "All" ? mistakes : mistakes.filter((m) => m.category === filter);
+
+  function replayMistake(mistake) {
+    markMistakeReviewed(mistake.at);
+    navigate("/practice/video-poker", { state: { replayMistake: { ...mistake, reviewedAt: new Date().toISOString() } } });
+  }
 
   return (
     <div className="px-5 pt-8 pb-4 max-w-2xl mx-auto">
@@ -71,7 +71,7 @@ export default function Mistakes() {
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground mb-3">{m.reason}</p>
-                  <button onClick={() => navigate("/practice/video-poker", { state: { replayMistake: m } })} className="hw-chip-gold rounded-xl px-4 py-2 text-xs font-semibold flex items-center gap-1.5">
+                  <button onClick={() => replayMistake(m)} className="hw-chip-gold rounded-xl px-4 py-2 text-xs font-semibold flex items-center gap-1.5">
                     <RotateCcw size={13} /> Replay
                   </button>
                 </div>

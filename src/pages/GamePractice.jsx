@@ -7,6 +7,7 @@ import { useEntitlement } from "@/lib/billing";
 import { useApp } from "@/lib/appContext";
 import Paywall from "@/components/Paywall";
 import { cn } from "@/lib/utils";
+import { recordAcademyCompletion } from "@/lib/academyProgress";
 
 export default function GamePractice() {
   const { gameId } = useParams();
@@ -52,6 +53,7 @@ export default function GamePractice() {
 
   function next() {
     if (questionIndex === questions.length - 1) {
+      recordAcademyCompletion(gameId, { score, total: questions.length });
       setComplete(true);
       return;
     }

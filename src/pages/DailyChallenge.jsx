@@ -1,113 +1,157 @@
-import React, { useState, useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calendar, CheckCircle2, X, Trophy } from "lucide-react";
-import { buildCard } from "@/lib/cards/deck";
+import { Calendar, CheckCircle2, RotateCcw, Sparkles, Trophy, X } from "lucide-react";
 import { evaluateHand } from "@/lib/cards/handEvaluator";
 import PlayingCard from "@/components/PlayingCard";
 import { useApp } from "@/lib/appContext";
+import GlassSurface from "@/components/premium/GlassSurface";
+import TactilePressable from "@/components/premium/TactilePressable";
+import ScreenReveal, { RevealItem } from "@/components/premium/ScreenReveal";
+import {
+  buildDailyChallengeHands,
+  buildDailyChallengeOptions,
+  buildDailyChallengeRecord,
+  loadDailyChallengeRecord,
+  saveDailyChallengeRecord,
+} from "@/lib/dailyChallenge";
 
-// Deterministic daily challenge based on the date, so everyone gets the same
-// challenge on a given day.
-function seedFromDate() {
-  const d = new Date();
-  return d.getFullYear() * 1000 + (d.getMonth() + 1) * 50 + d.getDate();
-}
-
-function pick(n, arr, rng) {
-  const a = arr.slice();
-  const out = [];
-  for (let i = 0; i < n; i++) out.push(a.splice(Math.floor(rng() * a.length), 1)[0]);
-  return out;
-}
-
-const RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
-const SUITS = ["hearts", "diamonds", "clubs", "spades"];
-
-function makeHand(seed) {
-  let s = seed;
-  const rng = () => {
-    s = (s * 1103515245 + 12345) & 0x7fffffff;
-    return s / 0x7fffffff;
-  };
-  const ranks = pick(5, RANKS, rng);
-  const suits = pick(5, SUITS, rng);
-  return ranks.map((r, i) => buildCard(r, suits[i]));
-}
+const QUESTION_COUNT = 5;
 
 export default function DailyChallenge() {
   const navigate = useNavigate();
   const { addPoints, bumpStreak } = useApp();
-  const seed = seedFromDate();
+  const challengeDate = useMemo(() => new Date(), []);
+  const hands = useMemo(() => buildDailyChallengeHands(challengeDate, QUESTION_COUNT), [challengeDate]);
+  const [previous, setPrevious] = useState(() => loadDailyChallengeRecord(challengeDate));
   const [idx, setIdx] = useState(0);
-  const hands = useMemo(() => [makeHand(seed), makeHand(seed + 1), makeHand(seed + 2), makeHand(seed + 3), makeHand(seed + 4)], []);
   const [answers, setAnswers] = useState([]);
+  const [complete, setComplete] = useState(false);
+  const [awardedThisRun, setAwardedThisRun] = useState(false);
 
   const task = hands[idx];
   const result = evaluateHand(task);
-  const options = useMemo(() => {
-    const all = ["Royal Flush", "Straight Flush", "Four of a Kind", "Full House", "Flush", "Straight", "Three of a Kind", "Two Pair", "Jacks or Better", "Low Pair", "High Card"];
-    const correct = result.name;
-    const wrong = all.filter((n) => n !== correct).sort(() => 0.5 - Math.random()).slice(0, 3);
-    return [...wrong, correct].sort(() => 0.5 - Math.random());
-  }, [idx]);
+  const options = useMemo(() => buildDailyChallengeOptions(task, challengeDate, idx), [task, challengeDate, idx]);
+  const currentAnswer = answers[idx];
+  const score = answers.filter((answer) => answer.correct).length;
 
   function answer(name) {
+    if (currentAnswer) return;
     const correct = name === result.name;
-    setAnswers((a) => [...a, { guess: name, correct, actual: result.name }]);
-    if (correct) addPoints(15);
+    const nextAnswer = { guess: name, correct, actual: result.name };
+    setAnswers((current) => [...current, nextAnswer]);
+    if (correct && !previous) addPoints(15);
   }
 
   function next() {
-    if (idx < hands.length - 1) setIdx(idx + 1);
-    else { bumpStreak(); }
+    if (!currentAnswer) return;
+    if (idx < hands.length - 1) {
+      setIdx((value) => value + 1);
+      return;
+    }
+
+    const finalScore = answers.filter((answer) => answer.correct).length;
+    const record = buildDailyChallengeRecord(challengeDate, finalScore, hands.length);
+    const bestScore = previous ? Math.max(previous.score || 0, record.score) : record.score;
+    const savedRecord = saveDailyChallengeRecord({ ...record, score: bestScore });
+    if (!previous) {
+      bumpStreak();
+      setAwardedThisRun(true);
+    }
+    setPrevious(savedRecord);
+    setComplete(true);
   }
 
-  const done = idx === hands.length - 1 && answers.length === hands.length;
+  function replay() {
+    setIdx(0);
+    setAnswers([]);
+    setComplete(false);
+    setAwardedThisRun(false);
+  }
 
   return (
-    <div className="px-5 pt-8 pb-4 max-w-2xl mx-auto">
-      <div className="flex items-center gap-2 mb-1">
-        <Calendar size={20} className="hw-gold-text" />
-        <h1 className="font-heading text-2xl sm:text-3xl font-bold">Daily Challenge</h1>
-      </div>
-      <p className="text-sm text-muted-foreground mb-5">Identify {hands.length} poker hands. {idx + 1} of {hands.length}.</p>
-
-      {!done ? (
-        <div className="hw-glass rounded-2xl border hw-gold-border p-5">
-          <p className="text-sm font-medium mb-4">What hand is this?</p>
-          <div className="flex flex-wrap justify-center gap-2 mb-5">
-            {task.map((c) => (
-              <PlayingCard key={c.id} card={c} size="md" />
-            ))}
+    <div className="mx-auto max-w-2xl px-5 pb-24 pt-7">
+      <ScreenReveal>
+        <RevealItem order={0} className="mb-5">
+          <div className="mb-1 flex items-center gap-2">
+            <Calendar size={20} className="hw-gold-text" />
+            <h1 className="font-heading text-3xl font-bold sm:text-4xl">Daily Challenge</h1>
           </div>
-          {answers.length <= idx && (
-            <div className="grid grid-cols-2 gap-2">
-              {options.map((o) => (
-                <button key={o} onClick={() => answer(o)} className="rounded-xl border border-border/60 px-3 py-2.5 text-sm hover:bg-white/5">
-                  {o}
-                </button>
-              ))}
-            </div>
-          )}
-          {answers.length > idx && (
-            <div className="text-center hw-fade-up">
-              {answers[idx].correct ? (
-                <p className="hw-gold-text flex items-center justify-center gap-1.5"><CheckCircle2 size={16} /> Correct!</p>
+          <p className="text-sm text-muted-foreground">Five deterministic hand-ID questions. Same challenge all day, no random reshuffling.</p>
+        </RevealItem>
+
+        {previous && !complete && answers.length === 0 && (
+          <RevealItem order={1} className="mb-4">
+            <GlassSurface strength={3} goldEdge className="rounded-2xl p-4">
+              <div className="flex items-start gap-3">
+                <Trophy size={20} className="mt-0.5 hw-gold-text" />
+                <div>
+                  <p className="font-semibold">Today’s challenge is already complete</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Best score: {previous.score}/{previous.total}. Replay for practice; bonus learning points are awarded only on the first completion.</p>
+                </div>
+              </div>
+            </GlassSurface>
+          </RevealItem>
+        )}
+
+        {!complete ? (
+          <RevealItem order={2}>
+            <GlassSurface strength={4} goldEdge className="overflow-hidden rounded-3xl p-5 sm:p-6">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.18em] hw-gold-text">Hand recognition</p>
+                  <p className="font-heading text-xl font-bold">What hand is this?</p>
+                </div>
+                <span className="rounded-full border border-[hsl(var(--hw-champagne)/.34)] bg-black/20 px-3 py-1 text-xs text-muted-foreground">{idx + 1}/{hands.length}</span>
+              </div>
+
+              <div className="relative mb-6 overflow-hidden rounded-2xl border border-[hsl(var(--hw-champagne)/.2)] bg-[radial-gradient(circle_at_50%_25%,hsl(var(--hw-emerald)/.28),transparent_58%),linear-gradient(180deg,hsl(var(--hw-midnight-teal)/.72),hsl(var(--hw-obsidian)/.9))] p-5">
+                <div className="pointer-events-none absolute inset-x-14 top-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--hw-victory-gold)/.65)] to-transparent" />
+                <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+                  {task.map((card, cardIndex) => (
+                    <RevealItem key={card.id} order={cardIndex}>
+                      <PlayingCard card={card} size="md" />
+                    </RevealItem>
+                  ))}
+                </div>
+              </div>
+
+              {!currentAnswer ? (
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {options.map((option) => (
+                    <TactilePressable key={option} onClick={() => answer(option)} hapticType="selection" className="hw-glass-2 rounded-xl border border-white/12 px-4 py-3 text-left text-sm font-medium shadow-none hover:hw-gold-border">
+                      {option}
+                    </TactilePressable>
+                  ))}
+                </div>
               ) : (
-                <p className="text-destructive flex items-center justify-center gap-1.5"><X size={16} /> It was {answers[idx].actual}</p>
+                <div className="text-center" aria-live="polite">
+                  {currentAnswer.correct ? (
+                    <p className="flex items-center justify-center gap-2 font-semibold hw-gold-text"><CheckCircle2 size={18} /> Exact.</p>
+                  ) : (
+                    <p className="flex items-center justify-center gap-2 font-semibold text-destructive"><X size={18} /> It was {currentAnswer.actual}.</p>
+                  )}
+                  <TactilePressable onClick={next} className="hw-lux-button mt-4 min-w-40 rounded-xl px-6 py-3 text-sm font-semibold">
+                    {idx === hands.length - 1 ? "Finish challenge" : "Next hand"}
+                  </TactilePressable>
+                </div>
               )}
-              <button onClick={next} className="mt-4 hw-chip-gold rounded-xl px-5 py-2.5 text-sm font-semibold">Next hand</button>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="hw-glass rounded-2xl border hw-gold-border p-6 text-center">
-          <Trophy size={32} className="hw-gold-text mx-auto mb-3" />
-          <p className="font-heading text-xl font-bold">Challenge complete</p>
-          <p className="text-sm text-muted-foreground mt-1">You got {answers.filter((a) => a.correct).length} of {hands.length} right. +{answers.filter((a) => a.correct).length * 15} learning points.</p>
-          <button onClick={() => navigate("/home")} className="mt-5 hw-chip-gold rounded-xl px-5 py-2.5 text-sm font-semibold">Back home</button>
-        </div>
-      )}
+            </GlassSurface>
+          </RevealItem>
+        ) : (
+          <RevealItem order={2}>
+            <GlassSurface strength={5} goldEdge className="rounded-3xl p-7 text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl hw-lux-button"><Trophy size={28} /></div>
+              <p className="text-[10px] uppercase tracking-[0.18em] hw-gold-text">Challenge complete</p>
+              <h2 className="mt-1 font-heading text-3xl font-bold">{score}/{hands.length} correct</h2>
+              <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{awardedThisRun ? `You earned ${score * 15} learning points and moved today’s Academy Missions forward.` : "Replay complete — your best score for today is saved."}</p>
+              <div className="mt-6 grid gap-2 sm:grid-cols-2">
+                <TactilePressable onClick={replay} className="hw-lux-button-secondary rounded-xl px-5 py-3 text-sm font-semibold"><span className="flex items-center justify-center gap-2"><RotateCcw size={16} /> Replay</span></TactilePressable>
+                <TactilePressable onClick={() => navigate("/home")} className="hw-lux-button rounded-xl px-5 py-3 text-sm font-semibold"><span className="flex items-center justify-center gap-2"><Sparkles size={16} /> Back home</span></TactilePressable>
+              </div>
+            </GlassSurface>
+          </RevealItem>
+        )}
+      </ScreenReveal>
     </div>
   );
 }

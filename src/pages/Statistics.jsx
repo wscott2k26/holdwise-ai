@@ -1,76 +1,98 @@
 import React, { useMemo } from "react";
-import { BarChart3, TrendingUp } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { BarChart3, TrendingUp, Trophy, Target, Table2, Compass } from "lucide-react";
 import { completionCount } from "@/lib/progress";
 import { useApp } from "@/lib/appContext";
 import PremiumGate from "@/components/PremiumGate";
 import { loadPracticeStats } from "@/lib/practiceStats";
 import { getPayTable } from "@/lib/cards/payTables";
+import { buildMasterySnapshot } from "@/lib/mastery";
+import GlassSurface from "@/components/premium/GlassSurface";
+import MasteryMeter from "@/components/premium/MasteryMeter";
+import ScreenReveal, { RevealItem } from "@/components/premium/ScreenReveal";
+import TactilePressable from "@/components/premium/TactilePressable";
 
-function percent(correct, total) {
-  return total ? `${Math.round((correct / total) * 100)}%` : "0%";
+function titleCase(value, fallback = "More practice needed") {
+  if (!value) return fallback;
+  return String(value).replaceAll("-", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function titleCase(value) {
-  return String(value || "No data").replaceAll("-", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+function accuracyLabel(row) {
+  return row ? `${Math.round(row.accuracy * 100)}%` : "—";
 }
 
 export default function Statistics() {
+  const navigate = useNavigate();
   const { profile } = useApp();
   const lessonsDone = completionCount();
   const practice = useMemo(() => loadPracticeStats(), []);
   const mistakes = useMemo(() => {
     try { return JSON.parse(localStorage.getItem("holdwise_mistakes_v1") || "[]"); } catch { return []; }
   }, []);
+  const snapshot = useMemo(
+    () => buildMasterySnapshot({ profile, practice, mistakes, lessonsDone }),
+    [profile, practice, mistakes, lessonsDone]
+  );
 
-  const categoryRows = Object.entries(practice.byCategory).map(([category, data]) => ({ category, ...data, accuracy: data.total ? data.correct / data.total : 0 }));
-  const experiencedRows = categoryRows.filter((row) => row.total >= 2);
-  const strongest = [...experiencedRows].sort((a, b) => b.accuracy - a.accuracy || b.total - a.total)[0];
-  const weakest = [...experiencedRows].sort((a, b) => a.accuracy - b.accuracy || b.total - a.total)[0];
-  const mistakeCounts = mistakes.reduce((map, mistake) => ({ ...map, [mistake.category]: (map[mistake.category] || 0) + 1 }), {});
-  const commonMistake = Object.entries(mistakeCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
-  const bestTable = Object.entries(practice.byPayTable)
-    .map(([id, data]) => ({ id, ...data, accuracy: data.total ? data.correct / data.total : 0 }))
-    .sort((a, b) => b.total - a.total)[0];
-  const recent = practice.recent.slice(0, 20);
-  const recentAccuracy = recent.length ? percent(recent.filter((item) => item.correct).length, recent.length) : "0%";
-  const recommendedFocus = weakest ? titleCase(weakest.category) : commonMistake ? titleCase(commonMistake) : "Complete more practice hands";
+  const bestTable = snapshot.bestPayTableId ? getPayTable(snapshot.bestPayTableId) : null;
+  const bestTableStats = snapshot.bestPayTableId ? practice.byPayTable?.[snapshot.bestPayTableId] : null;
+  const bestTableAccuracy = bestTableStats?.total ? Math.round((bestTableStats.correct / bestTableStats.total) * 100) : 0;
 
-  const freeStats = [
-    { label: "Lessons completed", value: lessonsDone },
-    { label: "Current streak", value: `${profile.streak} days` },
-    { label: "Practice hands", value: practice.total },
-    { label: "Decision accuracy", value: percent(practice.correct, practice.total) },
-    { label: "Overall mastery", value: `${Math.min(lessonsDone * 2 + Math.round((practice.correct / Math.max(1, practice.total)) * 20), 100)}%` },
-  ];
-
-  const premiumStats = [
-    { label: "Recent accuracy", value: recentAccuracy },
-    { label: "Most common mistake", value: titleCase(commonMistake) },
-    { label: "Strongest skill", value: strongest ? `${titleCase(strongest.category)} · ${percent(strongest.correct, strongest.total)}` : "More practice needed" },
-    { label: "Weakest skill", value: weakest ? `${titleCase(weakest.category)} · ${percent(weakest.correct, weakest.total)}` : "More practice needed" },
-    { label: "Most-used pay table", value: bestTable ? `${getPayTable(bestTable.id).version} · ${percent(bestTable.correct, bestTable.total)}` : "No hands yet" },
-    { label: "Recommended focus", value: recommendedFocus },
+  const premiumGroups = [
+    { label: "Momentum", value: `${snapshot.recentAccuracyPct}% recent accuracy`, icon: TrendingUp },
+    { label: "Strength", value: snapshot.strongest ? `${titleCase(snapshot.strongest.category)} · ${accuracyLabel(snapshot.strongest)}` : "More practice needed", icon: Trophy },
+    { label: "Focus", value: snapshot.weakest ? `${titleCase(snapshot.weakest.category)} · ${accuracyLabel(snapshot.weakest)}` : titleCase(snapshot.commonMistake), icon: Target },
+    { label: "Table familiarity", value: bestTable ? `${bestTable.version} · ${bestTableAccuracy}%` : "No hands yet", icon: Table2 },
+    { label: "Weekly focus", value: snapshot.recommendedFocus, icon: Compass },
   ];
 
   return (
-    <div className="px-5 pt-8 pb-4 max-w-2xl mx-auto">
-      <div className="flex items-center gap-2 mb-1"><BarChart3 size={20} className="hw-gold-text" /><h1 className="font-heading text-2xl sm:text-3xl font-bold">Statistics</h1></div>
-      <p className="text-sm text-muted-foreground mb-5">Educational progress only — never money won or lost.</p>
+    <div className="mx-auto max-w-2xl px-5 pb-4 pt-7">
+      <ScreenReveal>
+        <RevealItem order={0} className="mb-5">
+          <div className="mb-1 flex items-center gap-2"><BarChart3 size={20} className="hw-gold-text" /><h1 className="font-heading text-3xl font-bold sm:text-4xl">Progress</h1></div>
+          <p className="text-sm text-muted-foreground">Educational progress only — never money won or lost.</p>
+        </RevealItem>
 
-      <div className="grid grid-cols-2 gap-3 mb-5">
-        {freeStats.map((stat) => (
-          <div key={stat.label} className="hw-glass rounded-2xl border border-border/60 p-4"><p className="text-[11px] text-muted-foreground uppercase tracking-wide">{stat.label}</p><p className="font-heading text-2xl font-bold mt-1">{stat.value}</p></div>
-        ))}
-      </div>
+        <RevealItem order={1} className="mb-4">
+          <MasteryMeter
+            value={snapshot.masteryPct}
+            interpretation={`${snapshot.accuracyPct}% decision accuracy`}
+            streak={snapshot.streakDays}
+            focus={snapshot.recommendedFocus}
+          />
+        </RevealItem>
 
-      <div className="flex items-center gap-2 mb-2"><TrendingUp size={16} className="hw-gold-text" /><p className="text-[11px] hw-gold-text tracking-widest uppercase">Premium analytics</p></div>
-      <PremiumGate title="Premium statistics" reason="Accuracy by decision category, strongest and weakest skills, pay-table performance, and a recommended weekly focus.">
-        <div className="grid grid-cols-2 gap-3">
-          {premiumStats.map((stat) => (
-            <div key={stat.label} className="hw-glass rounded-2xl border border-border/60 p-4"><p className="text-[11px] text-muted-foreground uppercase tracking-wide">{stat.label}</p><p className="font-heading text-base font-bold mt-1 break-words">{stat.value}</p></div>
-          ))}
-        </div>
-      </PremiumGate>
+        <RevealItem order={2} className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <GlassSurface strength={2} className="rounded-2xl p-4"><p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Decision accuracy</p><p className="mt-1 font-heading text-2xl font-bold">{snapshot.accuracyPct}%</p></GlassSurface>
+          <GlassSurface strength={2} className="rounded-2xl p-4"><p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Current streak</p><p className="mt-1 font-heading text-2xl font-bold">{snapshot.streakDays} days</p></GlassSurface>
+          <GlassSurface strength={2} className="rounded-2xl p-4"><p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Practice decisions</p><p className="mt-1 font-heading text-2xl font-bold">{snapshot.totalDecisions}</p></GlassSurface>
+          <GlassSurface strength={2} className="rounded-2xl p-4"><p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Lessons completed</p><p className="mt-1 font-heading text-2xl font-bold">{lessonsDone}</p></GlassSurface>
+        </RevealItem>
+
+        <RevealItem order={3} className="mb-5">
+          <GlassSurface strength={4} goldEdge className="rounded-2xl p-4">
+            <div className="mb-1 flex items-center gap-2"><Target size={16} className="hw-gold-text" /><p className="text-[10px] uppercase tracking-[0.16em] hw-gold-text">Next best focus</p></div>
+            <p className="font-heading text-xl font-bold">{snapshot.recommendedFocus}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Built from the same practice decisions and saved review categories already in HoldWise.</p>
+            <TactilePressable onClick={() => navigate("/practice/video-poker?drill=5")} className="hw-lux-button mt-4 w-full rounded-xl px-4 py-3 text-sm font-semibold">Start 5-hand focus drill</TactilePressable>
+          </GlassSurface>
+        </RevealItem>
+
+        <RevealItem order={3}>
+          <div className="mb-2 flex items-center gap-2"><TrendingUp size={16} className="hw-gold-text" /><p className="text-[11px] uppercase tracking-[0.16em] hw-gold-text">Premium analytics</p></div>
+          <PremiumGate title="Premium statistics" reason="Accuracy by decision category, strongest and weakest skills, pay-table performance, and a recommended weekly focus.">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {premiumGroups.map((group) => (
+                <GlassSurface key={group.label} strength={2} className="rounded-2xl p-4">
+                  <div className="mb-2 flex items-center gap-2"><group.icon size={16} className="hw-gold-text" /><p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">{group.label}</p></div>
+                  <p className="font-heading text-lg font-bold break-words">{group.value}</p>
+                </GlassSurface>
+              ))}
+            </div>
+          </PremiumGate>
+        </RevealItem>
+      </ScreenReveal>
     </div>
   );
 }
