@@ -4,86 +4,95 @@
 
 @layer base {
   :root {
-    --background: 30 25% 8%;
-    --foreground: 40 30% 96%;
-    --card: 30 20% 11%;
-    --card-foreground: 40 30% 96%;
-    --popover: 30 20% 10%;
-    --popover-foreground: 40 30% 96%;
-    --primary: 43 74% 58%;
-    --primary-foreground: 30 25% 10%;
-    --secondary: 30 15% 18%;
-    --secondary-foreground: 40 30% 96%;
-    --muted: 30 12% 16%;
-    --muted-foreground: 40 15% 70%;
-    --accent: 150 25% 30%;
-    --accent-foreground: 40 30% 96%;
-    --destructive: 0 60% 55%;
-    --destructive-foreground: 40 30% 96%;
-    --border: 30 15% 20%;
-    --input: 30 15% 22%;
-    --ring: 43 74% 58%;
-    --radius: 0.9rem;
+    --background: 218 29% 6%;
+    --foreground: 36 48% 94%;
+    --card: 180 47% 9%;
+    --card-foreground: 36 48% 94%;
+    --popover: 180 50% 8%;
+    --popover-foreground: 36 48% 94%;
+    --primary: 39 59% 64%;
+    --primary-foreground: 218 29% 6%;
+    --secondary: 180 34% 13%;
+    --secondary-foreground: 36 48% 94%;
+    --muted: 180 24% 15%;
+    --muted-foreground: 40 18% 72%;
+    --accent: 165 64% 22%;
+    --accent-foreground: 36 48% 94%;
+    --destructive: 355 44% 50%;
+    --destructive-foreground: 36 48% 94%;
+    --border: 39 31% 27%;
+    --input: 180 28% 18%;
+    --ring: 42 80% 75%;
+    --radius: 0.95rem;
     --font-heading: 'Georgia', 'Times New Roman', serif;
     --font-body: ui-sans-serif, system-ui, -apple-system, sans-serif;
     --font-display: 'Georgia', serif;
     --font-mono: ui-monospace, monospace;
 
-    /* HoldWise brand palette */
-    --hw-navy: 30 30% 7%;
-    --hw-charcoal: 30 22% 12%;
-    --hw-ivory: 40 35% 96%;
-    --hw-gold: 43 80% 62%;
-    --hw-gold-soft: 43 60% 75%;
-    --hw-felt: 150 28% 24%;
-    --hw-felt-deep: 150 30% 16%;
-    --hw-red: 0 70% 58%;
-    --hw-black-suit: 220 20% 22%;
+    /* HoldWise luxury card-room palette */
+    --hw-obsidian: 218 29% 6%;
+    --hw-midnight-teal: 172 51% 12%;
+    --hw-emerald: 165 64% 22%;
+    --hw-champagne: 39 59% 64%;
+    --hw-victory-gold: 42 80% 75%;
+    --hw-ivory: 36 48% 94%;
+    --hw-ruby: 355 44% 50%;
+    --hw-onyx: 223 14% 10%;
+
+    /* Backward-compatible aliases used throughout the app */
+    --hw-navy: var(--hw-obsidian);
+    --hw-charcoal: 180 38% 11%;
+    --hw-gold: var(--hw-champagne);
+    --hw-gold-soft: var(--hw-victory-gold);
+    --hw-felt: var(--hw-emerald);
+    --hw-felt-deep: 168 58% 13%;
+    --hw-red: var(--hw-ruby);
+    --hw-black-suit: var(--hw-onyx);
   }
 
   .dark {
-    --background: 30 25% 8%;
-    --foreground: 40 30% 96%;
-    --card: 30 20% 11%;
-    --card-foreground: 40 30% 96%;
-    --popover: 30 20% 10%;
-    --popover-foreground: 40 30% 96%;
-    --primary: 43 74% 58%;
-    --primary-foreground: 30 25% 10%;
-    --secondary: 30 15% 18%;
-    --secondary-foreground: 40 30% 96%;
-    --muted: 30 12% 16%;
-    --muted-foreground: 40 15% 72%;
-    --accent: 150 25% 30%;
-    --accent-foreground: 40 30% 96%;
-    --destructive: 0 62% 58%;
-    --destructive-foreground: 40 30% 96%;
-    --border: 30 15% 22%;
-    --input: 30 15% 24%;
-    --ring: 43 74% 58%;
+    --background: 218 29% 6%;
+    --foreground: 36 48% 94%;
+    --card: 180 47% 9%;
+    --card-foreground: 36 48% 94%;
+    --popover: 180 50% 8%;
+    --popover-foreground: 36 48% 94%;
+    --primary: 39 59% 64%;
+    --primary-foreground: 218 29% 6%;
+    --secondary: 180 34% 13%;
+    --secondary-foreground: 36 48% 94%;
+    --muted: 180 24% 15%;
+    --muted-foreground: 40 18% 72%;
+    --accent: 165 64% 22%;
+    --accent-foreground: 36 48% 94%;
+    --destructive: 355 44% 50%;
+    --destructive-foreground: 36 48% 94%;
+    --border: 39 31% 27%;
+    --input: 180 28% 18%;
+    --ring: 42 80% 75%;
   }
 
   /* Light mode overrides for the warm card-room feel */
   .light {
-    --background: 40 40% 96%;
-    --foreground: 30 30% 12%;
-    --card: 40 45% 99%;
-    --card-foreground: 30 30% 12%;
-    --popover: 40 45% 99%;
-    --popover-foreground: 30 30% 12%;
-    --primary: 43 70% 45%;
-    --primary-foreground: 40 40% 98%;
-    --secondary: 40 30% 90%;
-    --secondary-foreground: 30 30% 12%;
-    --muted: 40 25% 88%;
-    --muted-foreground: 30 15% 40%;
-    --accent: 150 22% 38%;
-    --accent-foreground: 40 40% 98%;
-    --destructive: 0 60% 50%;
-    --destructive-foreground: 40 40% 98%;
-    --border: 40 25% 82%;
-    --input: 40 25% 84%;
-    --ring: 43 70% 45%;
+    --background: 36 48% 94%;
+    --foreground: 218 29% 6%;
+    --card: 40 52% 98%;
+    --card-foreground: 218 29% 6%;
+    --popover: 40 52% 98%;
+    --popover-foreground: 218 29% 6%;
+    --primary: 165 64% 22%;
+    --primary-foreground: 36 48% 94%;
+    --secondary: 39 42% 88%;
+    --secondary-foreground: 218 29% 6%;
+    --muted: 39 30% 90%;
+    --muted-foreground: 172 24% 28%;
+    --accent: 39 59% 64%;
+    --accent-foreground: 218 29% 6%;
+    --destructive: 355 44% 50%;
+    --destructive-foreground: 36 48% 94%;
+    --border: 39 38% 70%;
+    --input: 39 30% 84%;
+    --ring: 165 64% 22%;
   }
 }
 
@@ -107,12 +116,46 @@
 
   .hw-felt-bg {
     background:
-      radial-gradient(120% 120% at 50% 0%, hsl(var(--hw-felt) / 0.35) 0%, transparent 55%),
-      linear-gradient(180deg, hsl(var(--hw-navy)) 0%, hsl(var(--hw-charcoal)) 100%);
+      radial-gradient(95% 70% at 50% -8%, hsl(var(--hw-emerald) / 0.46) 0%, transparent 58%),
+      radial-gradient(75% 55% at 82% 24%, hsl(var(--hw-champagne) / 0.08) 0%, transparent 65%),
+      linear-gradient(165deg, hsl(var(--hw-midnight-teal)) 0%, hsl(var(--hw-obsidian)) 68%, hsl(218 34% 4%) 100%);
   }
-  .hw-card-face {
-    background: linear-gradient(160deg, hsl(var(--hw-ivory)) 0%, hsl(40 30% 92%) 100%);
-    box-shadow: 0 10px 30px -12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.6);
+  .hw-card-face,
+  .hw-glass-card {
+    position: relative;
+    overflow: hidden;
+    background:
+      linear-gradient(145deg, hsl(var(--hw-ivory) / .96) 0%, hsl(var(--hw-ivory) / .83) 52%, hsl(var(--hw-victory-gold) / .42) 145%);
+    border: 1px solid hsl(var(--hw-champagne) / .62);
+    -webkit-backdrop-filter: blur(16px) saturate(1.15);
+    backdrop-filter: blur(16px) saturate(1.15);
+    box-shadow:
+      0 18px 38px -20px rgba(0,0,0,.96),
+      0 0 0 1px rgba(255,255,255,.24) inset,
+      0 1px 0 hsl(var(--hw-victory-gold) / .34) inset;
+  }
+  .hw-glass-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(118deg, rgba(255,255,255,.48) 0%, rgba(255,255,255,.12) 22%, transparent 44%, rgba(255,255,255,.08) 76%, transparent 100%);
+    transform: translateX(-22%);
+    opacity: .62;
+  }
+  .hw-glass-card-held {
+    border-color: hsl(var(--hw-victory-gold) / .92);
+    box-shadow:
+      0 18px 42px -18px rgba(0,0,0,.98),
+      0 0 0 2px hsl(var(--hw-champagne) / .42),
+      0 0 28px hsl(var(--hw-emerald) / .42),
+      0 1px 0 rgba(255,255,255,.4) inset;
+  }
+  .hw-card-back {
+    background:
+      linear-gradient(135deg, hsl(var(--hw-midnight-teal)) 0%, hsl(var(--hw-emerald) / .84) 55%, hsl(var(--hw-obsidian)) 100%);
+    border: 1px solid hsl(var(--hw-champagne) / .66);
+    box-shadow: 0 18px 38px -20px rgba(0,0,0,.96), 0 0 0 1px rgba(255,255,255,.08) inset;
   }
   .hw-glass {
     background: hsl(var(--card) / 0.7);
@@ -126,9 +169,22 @@
   .hw-gold-border {
     border-color: hsl(var(--hw-gold) / 0.5);
   }
-  .hw-chip-gold {
-    background: linear-gradient(135deg, hsl(var(--hw-gold)) 0%, hsl(var(--hw-gold-soft)) 100%);
-    color: hsl(var(--hw-navy));
+  .hw-chip-gold,
+  .hw-lux-button {
+    background:
+      linear-gradient(145deg, hsl(var(--hw-victory-gold)) 0%, hsl(var(--hw-champagne)) 46%, hsl(35 57% 52%) 100%);
+    color: hsl(var(--hw-obsidian));
+    border: 1px solid hsl(var(--hw-victory-gold) / .82);
+    box-shadow:
+      0 6px 0 hsl(35 42% 28% / .85),
+      0 16px 34px -18px hsl(var(--hw-champagne) / .72),
+      inset 0 1px 0 rgba(255,255,255,.58);
+    text-shadow: 0 1px rgba(255,255,255,.28);
+  }
+  .hw-lux-button-secondary {
+    background: linear-gradient(145deg, hsl(var(--hw-emerald) / .9), hsl(var(--hw-midnight-teal) / .96));
+    border: 1px solid hsl(var(--hw-champagne) / .42);
+    box-shadow: 0 5px 0 hsl(var(--hw-obsidian) / .96), 0 16px 34px -22px hsl(var(--hw-emerald) / .65), inset 0 1px rgba(255,255,255,.11);
   }
 
   .reduce-motion * {
@@ -163,3 +219,57 @@
   to { opacity: 1; transform: translateY(0); }
 }
 .hw-fade-up { animation: hw-fade-up 0.35s ease-out both; }
+/* HoldWise Premium visual system */
+.hw-glass-1,
+.hw-glass-2,
+.hw-glass-3,
+.hw-glass-4,
+.hw-glass-5 {
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+.hw-glass-1 { background: linear-gradient(145deg, hsl(var(--hw-midnight-teal) / .54), hsl(var(--hw-obsidian) / .44)); border: 1px solid hsl(var(--hw-champagne) / .16); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.hw-glass-2 { background: linear-gradient(145deg, hsl(var(--hw-midnight-teal) / .66), hsl(var(--hw-obsidian) / .58)); border: 1px solid hsl(var(--hw-champagne) / .24); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+.hw-glass-3 { background: linear-gradient(145deg, hsl(var(--hw-midnight-teal) / .76), hsl(var(--hw-obsidian) / .68)); border: 1px solid hsl(var(--hw-champagne) / .3); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: 0 16px 44px -28px rgba(0,0,0,.85), inset 0 1px rgba(255,255,255,.08); }
+.hw-glass-4 { background: linear-gradient(145deg, hsl(var(--hw-emerald) / .34), hsl(var(--hw-midnight-teal) / .8) 52%, hsl(var(--hw-obsidian) / .78)); border: 1px solid hsl(var(--hw-champagne) / .52); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); box-shadow: 0 20px 50px -28px rgba(0,0,0,.9), inset 0 1px hsl(var(--hw-gold) / .16); }
+.hw-glass-5 { background: linear-gradient(145deg, hsl(var(--hw-emerald) / .42), hsl(var(--hw-midnight-teal) / .88) 48%, hsl(var(--hw-obsidian) / .86)); border: 1px solid hsl(var(--hw-victory-gold) / .56); -webkit-backdrop-filter: blur(22px); backdrop-filter: blur(22px); box-shadow: 0 30px 80px -34px rgba(0,0,0,.95), inset 0 1px rgba(255,255,255,.10); }
+.hw-glass-interactive { transition: border-color .18s ease, background-color .18s ease, box-shadow .18s ease; }
+.hw-glass-selected { border-color: hsl(var(--hw-gold) / .68); box-shadow: 0 18px 52px -28px rgba(0,0,0,.9), 0 0 0 1px hsl(var(--hw-gold) / .16), inset 0 1px hsl(var(--hw-gold) / .22); }
+.hw-glass-modal { isolation: isolate; }
+.hw-tactile-depth { box-shadow: 0 5px 0 hsl(var(--hw-navy) / .95), 0 15px 30px -20px rgba(0,0,0,.9); }
+.hw-safe-bottom { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+.hw-cinematic-breathe {
+  background:
+    radial-gradient(55% 42% at 50% 15%, hsl(var(--hw-gold) / .08), transparent 70%),
+    radial-gradient(80% 55% at 50% 80%, hsl(var(--hw-felt) / .16), transparent 72%);
+  animation: hw-cinematic-breathe 9s ease-in-out infinite alternate;
+}
+.hw-cinematic-suits {
+  opacity: .05;
+  background-image:
+    radial-gradient(circle at 20% 35%, hsl(var(--hw-gold)) 0 1px, transparent 2px),
+    radial-gradient(circle at 78% 60%, hsl(var(--foreground)) 0 1px, transparent 2px);
+  background-size: 54px 54px, 72px 72px;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,.7), transparent 75%);
+}
+.hw-cinematic-vignette { box-shadow: inset 0 0 150px rgba(0,0,0,.52); }
+@keyframes hw-cinematic-breathe {
+  from { opacity: .72; transform: scale(1); }
+  to { opacity: 1; transform: scale(1.035); }
+}
+.hw-cinematic-drift { animation: hw-cinematic-drift 14s linear infinite alternate; }
+@keyframes hw-cinematic-drift { from { transform: translate3d(-4px,0,0); } to { transform: translate3d(4px,-3px,0); } }
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .hw-glass-1,.hw-glass-2,.hw-glass-3,.hw-glass-4,.hw-glass-5 { background: hsl(var(--card) / .98); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hw-cinematic-drift,.hw-cinematic-breathe { animation: none !important; transform: none !important; }
+}
+
+.high-contrast .hw-glass-1,
+.high-contrast .hw-glass-2,
+.high-contrast .hw-glass-3,
+.high-contrast .hw-glass-4,
+.high-contrast .hw-glass-5 { background: hsl(var(--card) / .98); border-color: hsl(var(--foreground) / .55); }

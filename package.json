@@ -22,7 +22,8 @@
     "ios:release": "bash native/ios/HoldWiseAI/Scripts/release_all.sh",
     "appstore:verify": "python3 apple/verify_app_store_connect.py",
     "release:verify": "node scripts/verify-cloud-release.mjs && node scripts/verify-one-click-release.mjs",
-    "ios:eas": "eas build --platform ios --profile production --auto-submit"
+    "ios:eas": "eas build --platform ios --profile production --auto-submit",
+    "audit:gameplay": "node scripts/audit-gameplay.mjs"
   },
   "dependencies": {
     "@base44/sdk": "^0.8.40",

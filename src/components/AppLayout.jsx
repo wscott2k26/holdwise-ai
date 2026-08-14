@@ -1,14 +1,16 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
 import BottomNav from "./BottomNav";
+import CinematicBackdrop from "@/components/premium/CinematicBackdrop";
+
 // Layout for the main authenticated app (post-onboarding).
 export default function AppLayout() {
   return (
-    <div className="min-h-screen hw-felt-bg text-scale-root">
-      <main className="pb-20 min-h-screen">
+    <CinematicBackdrop intensity="normal" className="text-scale-root">
+      <main className="min-h-screen pb-[calc(6rem+env(safe-area-inset-bottom))]">
         <Outlet />
       </main>
       <BottomNav />
-    </div>
+    </CinematicBackdrop>
   );
 }

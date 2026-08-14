@@ -1,57 +1,75 @@
-import React from "react";
-import { Award, Lock } from "lucide-react";
-import { useEntitlement } from "@/lib/billing";
+import React, { useMemo } from "react";
+import { Award, CheckCircle2, Lock, Sparkles } from "lucide-react";
 import { completionCount } from "@/lib/progress";
-
-const ACHIEVEMENTS = [
-  { id: "first-lesson", title: "First Lesson", desc: "Complete your first lesson.", type: "lessons", value: 1 },
-  { id: "suit-spotter", title: "Suit Spotter", desc: "Finish the suits unit.", type: "lessons", value: 6 },
-  { id: "rank-ranger", title: "Rank Ranger", desc: "Finish the ranks unit.", type: "lessons", value: 7 },
-  { id: "pair-pro", title: "Pair Pro", desc: "Finish the matching unit.", type: "lessons", value: 6 },
-  { id: "hand-historian", title: "Hand Historian", desc: "Finish the poker hands world.", type: "lessons", value: 10 },
-  { id: "ten-holds", title: "Ten Correct Holds", desc: "Make 10 correct hold decisions.", type: "holds", value: 10 },
-  { id: "fifty-holds", title: "Fifty Correct Holds", desc: "Make 50 correct hold decisions.", type: "holds", value: 50 },
-  { id: "mistake-master", title: "Mistake Master", desc: "Review 10 saved mistakes.", type: "reviews", value: 10 },
-  { id: "streak-7", title: "Seven-Day Learning Streak", desc: "Practice 7 days in a row.", type: "streak", value: 7 },
-  { id: "job-graduate", title: "Jacks or Better Graduate", desc: "Finish the Jacks or Better course.", type: "lessons", value: 13 },
-  { id: "academy-first", title: "First Academy Course", desc: "Complete any Academy course.", type: "courses", value: 1 },
-];
+import { loadPracticeStats } from "@/lib/practiceStats";
+import { useApp } from "@/lib/appContext";
+import { buildAchievementProgress } from "@/lib/achievementProgress";
+import { loadAcademyCompletions } from "@/lib/academyProgress";
+import { loadMistakes } from "@/lib/mistakes";
+import GlassSurface from "@/components/premium/GlassSurface";
+import ScreenReveal, { RevealItem } from "@/components/premium/ScreenReveal";
 
 export default function Achievements() {
-  const { isPremium } = useEntitlement();
+  const { profile } = useApp();
   const lessonsDone = completionCount();
-  // crude earned logic for v1
-  const earned = (a) => {
-    if (a.type === "lessons") return lessonsDone >= a.value;
-    if (a.type === "streak") return false; // tracked in profile
-    return false;
-  };
+  const practice = useMemo(() => loadPracticeStats(), []);
+  const mistakes = useMemo(() => loadMistakes(), []);
+  const academyCompleted = useMemo(() => loadAcademyCompletions().map((row) => row.gameId), []);
+  const cards = useMemo(
+    () => buildAchievementProgress({ lessonsDone, practice, profile, mistakes, academyCompleted }),
+    [lessonsDone, practice, profile, mistakes, academyCompleted]
+  );
+  const earnedCount = cards.filter((card) => card.earned).length;
 
   return (
-    <div className="px-5 pt-8 pb-4 max-w-2xl mx-auto">
-      <div className="flex items-center gap-2 mb-1">
-        <Award size={20} className="hw-gold-text" />
-        <h1 className="font-heading text-2xl sm:text-3xl font-bold">Achievements</h1>
-      </div>
-      <p className="text-sm text-muted-foreground mb-5">Meaningful milestones — never based on betting more or chasing losses.</p>
+    <div className="mx-auto max-w-2xl px-5 pb-24 pt-7">
+      <ScreenReveal>
+        <RevealItem order={0} className="mb-5">
+          <div className="mb-1 flex items-center gap-2">
+            <Award size={20} className="hw-gold-text" />
+            <h1 className="font-heading text-3xl font-bold sm:text-4xl">Badge Case</h1>
+          </div>
+          <p className="text-sm text-muted-foreground">Skill milestones inspired by premium card-game collections — earned through learning, never spending or wagering.</p>
+        </RevealItem>
 
-      <div className="grid grid-cols-2 gap-3">
-        {ACHIEVEMENTS.map((a) => {
-          const got = earned(a);
-          return (
-            <div key={a.id} className={`hw-glass rounded-2xl border p-4 ${got ? "hw-gold-border" : "border-border/60"} ${!got && "opacity-70"}`}>
-              <div className="flex items-center justify-between mb-2">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${got ? "hw-chip-gold" : "hw-glass border border-border/60"}`}>
-                  {got ? <Award size={18} /> : <Lock size={16} className="text-muted-foreground" />}
-                </div>
-                {got && <span className="text-[10px] hw-gold-text uppercase tracking-wide">Earned</span>}
+        <RevealItem order={1} className="mb-4">
+          <GlassSurface strength={4} goldEdge className="rounded-2xl p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.18em] hw-gold-text">Collection progress</p>
+                <p className="mt-1 font-heading text-2xl font-bold">{earnedCount} of {cards.length} badges</p>
               </div>
-              <p className="font-semibold text-sm">{a.title}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{a.desc}</p>
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl hw-lux-button"><Sparkles size={20} /></div>
             </div>
-          );
-        })}
-      </div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-black/30">
+              <div className="h-full rounded-full bg-gradient-to-r from-[hsl(var(--hw-emerald))] via-[hsl(var(--hw-champagne))] to-[hsl(var(--hw-victory-gold))]" style={{ width: `${Math.round((earnedCount / cards.length) * 100)}%` }} />
+            </div>
+          </GlassSurface>
+        </RevealItem>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {cards.map((card, index) => (
+            <RevealItem key={card.id} order={Math.min(index + 2, 6)}>
+              <GlassSurface strength={card.earned ? 4 : 2} goldEdge={card.earned} className="h-full rounded-2xl p-4">
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div className={card.earned ? "flex h-11 w-11 items-center justify-center rounded-xl hw-lux-button" : "flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-black/20"}>
+                    {card.earned ? <Award size={20} /> : <Lock size={17} className="text-muted-foreground" />}
+                  </div>
+                  {card.earned && <span className="flex items-center gap-1 text-[10px] uppercase tracking-[0.14em] hw-gold-text"><CheckCircle2 size={12} /> Earned</span>}
+                </div>
+                <p className="font-semibold">{card.title}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{card.desc}</p>
+                <div className="mt-4">
+                  <div className="mb-1 flex justify-between text-[10px] text-muted-foreground"><span>Progress</span><span>{Math.min(card.progress, card.value)}/{card.value}</span></div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-black/30">
+                    <div className="h-full rounded-full bg-[hsl(var(--hw-champagne))]" style={{ width: `${card.percent}%` }} />
+                  </div>
+                </div>
+              </GlassSurface>
+            </RevealItem>
+          ))}
+        </div>
+      </ScreenReveal>
     </div>
   );
 }
