@@ -1,0 +1,41 @@
+name: Sync verified PracticeVP source
+
+on:
+  push:
+    branches:
+      - feature/holdwise-premium
+    paths:
+      - '.sync/PracticeVP.b64.part*'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Rebuild verified trainer source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .sync/PracticeVP.b64.part* | tr -d '\n\r' | base64 --decode > src/pages/PracticeVP.jsx
+          actual="$(git hash-object src/pages/PracticeVP.jsx)"
+          expected="9771b22327165e1d75c7d2303d99351090ba30d8"
+          echo "PracticeVP blob: $actual"
+          test "$actual" = "$expected"
+      - name: Commit verified source if needed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- src/pages/PracticeVP.jsx; then
+            echo 'PracticeVP already matches the verified source.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/pages/PracticeVP.jsx
+          git commit -m 'fix: sync verified premium trainer source'
+          git push origin HEAD:feature/holdwise-premium
