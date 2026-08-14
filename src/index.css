@@ -1,0 +1,165 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 30 25% 8%;
+    --foreground: 40 30% 96%;
+    --card: 30 20% 11%;
+    --card-foreground: 40 30% 96%;
+    --popover: 30 20% 10%;
+    --popover-foreground: 40 30% 96%;
+    --primary: 43 74% 58%;
+    --primary-foreground: 30 25% 10%;
+    --secondary: 30 15% 18%;
+    --secondary-foreground: 40 30% 96%;
+    --muted: 30 12% 16%;
+    --muted-foreground: 40 15% 70%;
+    --accent: 150 25% 30%;
+    --accent-foreground: 40 30% 96%;
+    --destructive: 0 60% 55%;
+    --destructive-foreground: 40 30% 96%;
+    --border: 30 15% 20%;
+    --input: 30 15% 22%;
+    --ring: 43 74% 58%;
+    --radius: 0.9rem;
+    --font-heading: 'Georgia', 'Times New Roman', serif;
+    --font-body: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-display: 'Georgia', serif;
+    --font-mono: ui-monospace, monospace;
+
+    /* HoldWise brand palette */
+    --hw-navy: 30 30% 7%;
+    --hw-charcoal: 30 22% 12%;
+    --hw-ivory: 40 35% 96%;
+    --hw-gold: 43 80% 62%;
+    --hw-gold-soft: 43 60% 75%;
+    --hw-felt: 150 28% 24%;
+    --hw-felt-deep: 150 30% 16%;
+    --hw-red: 0 70% 58%;
+    --hw-black-suit: 220 20% 22%;
+  }
+
+  .dark {
+    --background: 30 25% 8%;
+    --foreground: 40 30% 96%;
+    --card: 30 20% 11%;
+    --card-foreground: 40 30% 96%;
+    --popover: 30 20% 10%;
+    --popover-foreground: 40 30% 96%;
+    --primary: 43 74% 58%;
+    --primary-foreground: 30 25% 10%;
+    --secondary: 30 15% 18%;
+    --secondary-foreground: 40 30% 96%;
+    --muted: 30 12% 16%;
+    --muted-foreground: 40 15% 72%;
+    --accent: 150 25% 30%;
+    --accent-foreground: 40 30% 96%;
+    --destructive: 0 62% 58%;
+    --destructive-foreground: 40 30% 96%;
+    --border: 30 15% 22%;
+    --input: 30 15% 24%;
+    --ring: 43 74% 58%;
+  }
+
+  /* Light mode overrides for the warm card-room feel */
+  .light {
+    --background: 40 40% 96%;
+    --foreground: 30 30% 12%;
+    --card: 40 45% 99%;
+    --card-foreground: 30 30% 12%;
+    --popover: 40 45% 99%;
+    --popover-foreground: 30 30% 12%;
+    --primary: 43 70% 45%;
+    --primary-foreground: 40 40% 98%;
+    --secondary: 40 30% 90%;
+    --secondary-foreground: 30 30% 12%;
+    --muted: 40 25% 88%;
+    --muted-foreground: 30 15% 40%;
+    --accent: 150 22% 38%;
+    --accent-foreground: 40 40% 98%;
+    --destructive: 0 60% 50%;
+    --destructive-foreground: 40 40% 98%;
+    --border: 40 25% 82%;
+    --input: 40 25% 84%;
+    --ring: 43 70% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-body;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  h1, h2, h3, h4 {
+    @apply font-heading;
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer utilities {
+  .font-display { @apply font-heading; }
+
+  .hw-felt-bg {
+    background:
+      radial-gradient(120% 120% at 50% 0%, hsl(var(--hw-felt) / 0.35) 0%, transparent 55%),
+      linear-gradient(180deg, hsl(var(--hw-navy)) 0%, hsl(var(--hw-charcoal)) 100%);
+  }
+  .hw-card-face {
+    background: linear-gradient(160deg, hsl(var(--hw-ivory)) 0%, hsl(40 30% 92%) 100%);
+    box-shadow: 0 10px 30px -12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.6);
+  }
+  .hw-glass {
+    background: hsl(var(--card) / 0.7);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid hsl(var(--border) / 0.7);
+  }
+  .hw-gold-text {
+    color: hsl(var(--hw-gold));
+  }
+  .hw-gold-border {
+    border-color: hsl(var(--hw-gold) / 0.5);
+  }
+  .hw-chip-gold {
+    background: linear-gradient(135deg, hsl(var(--hw-gold)) 0%, hsl(var(--hw-gold-soft)) 100%);
+    color: hsl(var(--hw-navy));
+  }
+
+  .reduce-motion * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .high-contrast {
+    --muted-foreground: 40 10% 92%;
+    --border: 40 10% 60%;
+  }
+  .left-handed .nav-bottom { flex-direction: row-reverse; }
+
+  .text-scale-root { font-size: calc(1rem * var(--hw-text-scale, 1)); }
+}
+
+/* Card flip / deal animation */
+@keyframes hw-deal {
+  0% { transform: translateY(-40px) rotate(-6deg) scale(0.9); opacity: 0; }
+  100% { transform: translateY(0) rotate(0) scale(1); opacity: 1; }
+}
+.hw-deal-in { animation: hw-deal 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes hw-hold-pulse {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.hw-held { animation: hw-hold-pulse 1.6s ease-in-out infinite; }
+
+@keyframes hw-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.hw-fade-up { animation: hw-fade-up 0.35s ease-out both; }
