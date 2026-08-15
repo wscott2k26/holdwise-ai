@@ -52,12 +52,14 @@ jobs:
         shell: bash
         run: npm run audit:gameplay
 
+      - name: Bundle native web assets
+        shell: bash
+        run: bash native/ios/HoldWiseAI/Scripts/prepare_web.sh
+
       - name: Generate iOS project
         working-directory: native/ios/HoldWiseAI
         shell: bash
-        run: |
-          set -euo pipefail
-          xcodegen generate --spec project.yml
+        run: xcodegen generate --spec project.yml
 
       - name: Build ARM iOS Simulator app
         working-directory: native/ios/HoldWiseAI
