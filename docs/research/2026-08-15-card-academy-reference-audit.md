@@ -9,25 +9,70 @@ Purpose: Current category benchmark used before and after meaningful HoldWise Ca
 - Every family pass must show the Google-3 trio: Liquid Glassmorphism, Tactile Maximalism, Immersive Cinematic Pacing.
 - Every gameplay pass must use the HoldWise rules engine as source of truth, then add Coach Ace, tutorial highlights, mastery XP and mistake review.
 
+## Academy Lobby — verified source pass
+Current references:
+- WSOP Poker: Texas Holdem Game — Apple App Store: https://apps.apple.com/us/app/wsop-poker-texas-holdem-game/id719525810
+- Governor of Poker 3 — Apple App Store: https://apps.apple.com/us/app/governor-of-poker-3-holdem/id877638937
+- Microsoft Solitaire Collection — Apple App Store: https://apps.apple.com/us/app/microsoft-solitaire-collection/id1103438575
+- UNO! Mobile category reference — Apple App Store: https://apps.apple.com/us/app/uno/id1344700142
+
+Reference match: PASS at source-contract level. HoldWise now opens into a collection-first destination with Continue Learning, Daily Challenge, XP/streak/tutorial progress, recent games, five game families, and all 21 full-play entries rather than opening directly into Jacks or Better.
+
+Google-3 match: PASS at source-contract level.
+- Liquid Glassmorphism: GlassSurface drives hero, status, family and game tiles.
+- Tactile Maximalism: TactilePressable drives primary discovery and play/learn actions.
+- Immersive Cinematic Pacing: ScreenReveal/RevealItem stages the hero, progress and family sections.
+
+HoldWise twist: every game exposes Play + Learn; progression is education-first rather than purchase-first.
+
+Simulator screenshot gate: PENDING final family implementation and real iOS runtime verification.
+
 ## Poker / Texas Hold'em / Video Poker
 Current references:
 - WSOP Poker: Texas Holdem Game — Apple App Store: https://apps.apple.com/us/app/wsop-poker-texas-holdem-game/id719525810
 - Governor of Poker 3 — Apple App Store: https://apps.apple.com/us/app/governor-of-poker-3-holdem/id877638937
-- Governor official learn-poker tutorial: https://www.governorofpoker.com/games/learn-poker/
+- WSOP 2026 official rules/tournament hub: https://www.wsop.com/tournaments/2026-57th-annual-world-series-of-poker/
 
-Current product conventions:
-- Both major apps emphasize multiple game modes, progression/rewards and repeat-session loops, not a single isolated table.
-- WSOP currently emphasizes tournaments, collectibles, daily quests, seasonal rewards and multiple poker/mini-game modes.
-- Governor currently emphasizes cash/tournament modes, missions, progression, collectibles and Blackjack alongside Hold'em.
+Current category conventions confirmed 2026-08-15:
+- WSOP continues to combine classic Texas Hold'em with multiple modes, tournaments, collectibles, daily quests and reward progression.
+- Governor continues to combine seated Hold'em, tournaments, multiple game modes, missions, collectible status items and progression.
+- The play surface must remain the visual center; progression chrome cannot overpower an active decision.
 
-Visual observations from current/reference screenshots:
-- Poker reads best with a strong felt center stage, dark/wood/obsidian perimeter, bright white cards, large bottom action controls and high-contrast pot/stack labels.
-- Governor's official tutorial uses warm wood, red/orange felt, gold/yellow instructional overlays and large touch targets.
-- WSOP category screenshots commonly use green felt, dark violet/black chrome and saturated reward/status accents.
+### Texas Hold'em visual target
+- emerald felt center stage
+- obsidian/midnight perimeter
+- bright white readable cards
+- four readable seats and stacks close to player identity
+- community board centered with pot hierarchy
+- champagne-gold current-turn, premium edge and win emphasis
+- restrained ruby for fold/loss/urgent state
+- large bottom Fold / Check-Call / Bet-Raise hierarchy
+- complete bet sizing rather than fixed demo-size bets
 
-HoldWise adaptation:
-- Obsidian + midnight shell, emerald felt primary poker skin, champagne-gold premium edges, controlled ruby action energy.
-- Four-seat table for local Hold'em, oversized bottom controls, community cards centered, Coach Ace/tutorial overlays rendered as premium glass rather than cartoon speech-box copying.
+### Texas Hold'em Google-3 target
+- Liquid Glass: player/status chips, bet controls, result sheet, Coach layer.
+- Tactile: large hole cards, oversized action buttons, physical-feeling bet-size controls with haptics.
+- Cinematic: staged hole-card deal, flop three-card reveal, turn/river single reveals, showdown glow and restrained win celebration.
+
+### Texas Hold'em gameplay verification
+Focused CI GREEN for:
+- shared five-card and best-five-of-seven evaluator including wheel straights, kickers and ties
+- four-seat match creation
+- small/big blinds
+- legal-action rejection
+- raises and action reset
+- preflop/flop/turn/river/showdown flow
+- uncontested-pot award
+- side-pot-safe showdown settlement with chip conservation
+- next-hand dealer rotation and persistent chips
+- legal local bot actions
+
+Table UI and simulator visual gate: ACTIVE / pending completion.
+
+### Video Poker target
+- Preserve exact Jacks-or-Better engine and 2,598,960-hand evaluator audit.
+- Bonus Poker, Double Bonus, Double Double Bonus, Deuces Wild and Joker Poker must use variant-correct pay tables/evaluation.
+- Wild variants must never be labeled as using exact standard Jacks-or-Better advice.
 
 ## Blackjack
 Current references:
@@ -100,8 +145,8 @@ Reference approach:
 - These simpler games have fragmented app-store leaders, so HoldWise uses the strongest current family-card conventions: large central piles, immediately readable turn state, minimal control clutter, smart/fast local bots, and celebratory progression without ad-like interruption.
 - Rules are validated against standard/common published play conventions before engine completion.
 
-## Baseline visual gates before first lobby pass
+## Baseline visual gates
 Reference match: PASS — five family visual directions defined from current leaders.
 Google-3 match target: PASS BY DESIGN — existing HoldWise glass/tactile/cinematic primitives remain required.
-Gameplay match target: PASS BY CONTRACT — catalog marks all 21 as full play and tutorials are contractually required; engine-level PASS is recorded only after each family implementation.
+Gameplay match target: ENGINE-BY-ENGINE — a game is PASS only after its complete loop and tests are green.
 IP-safe adaptation: PASS — competitor assets/names are not reused except ordinary game names; Color Clash stays original.
