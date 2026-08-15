@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - appetize-preview
+      - appetize-runtime-fix
   workflow_dispatch:
 
 permissions:
@@ -51,11 +52,11 @@ jobs:
         shell: bash
         run: npm install --no-audit --no-fund
 
-      - name: Fresh premium and gameplay tests
+      - name: Fresh premium, gameplay, and native runtime contract tests
         shell: bash
         run: |
           set -euo pipefail
-          node --test tests/daily-engagement.test.mjs tests/haptics.test.mjs tests/mastery.test.mjs tests/premium-visual.test.mjs
+          node --test tests/daily-engagement.test.mjs tests/haptics.test.mjs tests/mastery.test.mjs tests/premium-visual.test.mjs tests/native-runtime-contract.test.mjs
           npm run build
 
       - name: Fresh exhaustive gameplay audit
