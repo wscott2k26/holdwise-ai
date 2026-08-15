@@ -1,0 +1,34 @@
+.hw-solitaire-table {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 78% 4%, rgba(75,139,221,.2), transparent 25%),
+    radial-gradient(circle at 18% 20%, rgba(35,173,160,.16), transparent 24%),
+    linear-gradient(180deg,#08233a 0%,#063047 38%,#043c43 72%,#03272d 100%);
+  border:1px solid rgba(174,218,235,.15);
+  box-shadow:inset 0 1px rgba(255,255,255,.05),inset 0 -38px 80px rgba(0,0,0,.28),0 28px 70px rgba(0,0,0,.38);
+}
+.hw-solitaire-slot {
+  border:1px solid rgba(218,239,244,.13);
+  background:rgba(2,18,28,.22);
+  box-shadow:inset 0 0 18px rgba(0,0,0,.18);
+}
+.hw-solitaire-mini-card {
+  position:relative;
+  width:44px;
+  height:62px;
+  flex:none;
+  border-radius:8px;
+  background:linear-gradient(155deg,#fffdf8,#eaf0f2);
+  box-shadow:0 5px 12px rgba(0,0,0,.25),inset 0 1px rgba(255,255,255,.9);
+  color:#101820;
+  font-weight:900;
+  line-height:1;
+  user-select:none;
+}
+.hw-solitaire-mini-card.red{color:#bd2941}.hw-solitaire-mini-card.selected{outline:2px solid #efd087;transform:translateY(-4px);box-shadow:0 7px 16px rgba(0,0,0,.28),0 0 20px rgba(239,208,135,.18)}
+.hw-solitaire-card-back{background:linear-gradient(145deg,#17395d,#0a233c);border:1px solid rgba(225,239,255,.18);box-shadow:inset 0 0 0 3px rgba(255,255,255,.035),0 5px 12px rgba(0,0,0,.25)}
+.hw-solitaire-column{min-width:44px}
+.hw-solitaire-action-glow{box-shadow:0 0 0 1px rgba(239,208,135,.14),0 0 20px rgba(239,208,135,.11)}
+.hw-solitaire-teal{color:#9ee7de}
+@media(min-width:430px){.hw-solitaire-mini-card{width:50px;height:70px}.hw-solitaire-column{min-width:50px}}
