@@ -29,6 +29,7 @@ import path from 'node:path';
 
 const www = process.env.WWW_DIR;
 const indexPath = path.join(www, 'index.html');
+const receiptPath = path.join(www, '.holdwise-native-bootstrap.json');
 let html = fs.readFileSync(indexPath, 'utf8');
 
 const scriptPattern = /<script\b[^>]*\bsrc=["'](\.\/assets\/index-[^"']+\.js)["'][^>]*>\s*<\/script>/gi;
@@ -66,12 +67,29 @@ html = html.replace(
   `<script type="module" data-holdwise-inline data-source="${path.basename(scriptRel)}">\n${js}\n</script>`
 );
 
+// Verify the exact original shell tags are gone before writing the native copy.
+const scriptTagRemoved = !html.includes(scriptTag);
+const styleTagRemoved = !html.includes(styleTag);
+if (!scriptTagRemoved || !styleTagRemoved) {
+  throw new Error(`Native bootstrap replacement incomplete: script=${scriptTagRemoved} style=${styleTagRemoved}`);
+}
+
 // These are useful to the hosted PWA, but unnecessary (and potentially noisy)
 // when the exact same HTML is loaded from the installed iOS application bundle.
 html = html.replace(/<link\b[^>]*\bhref=["']\/manifest\.json["'][^>]*>\s*/gi, '');
 html = html.replace(/<link\b[^>]*\bhref=["']https:\/\/base44\.com\/logo_v2\.svg["'][^>]*>\s*/gi, '');
 
 fs.writeFileSync(indexPath, html);
+fs.writeFileSync(receiptPath, JSON.stringify({
+  version: 1,
+  inlinedScript: scriptRel,
+  inlinedStyle: styleRel,
+  scriptTagRemoved,
+  styleTagRemoved,
+  manifestRemoved: !/<link\b[^>]*\bhref=["']\/manifest\.json["'][^>]*>/i.test(html),
+  inlineScriptMarker: /<script\b[^>]*data-holdwise-inline/i.test(html),
+  inlineStyleMarker: /<style\b[^>]*data-holdwise-inline/i.test(html)
+}, null, 2));
 console.log(`Inlined native bootstrap: ${scriptRel} + ${styleRel}`);
 NODE
 
