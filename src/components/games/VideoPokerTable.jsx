@@ -85,7 +85,7 @@ export default function VideoPokerTable({ game }) {
         <div className="mt-3 min-h-14 text-center">
           {state.phase==='bet' && <p className="text-sm font-bold text-white/65">Choose 1–5 Credits, then Deal.</p>}
           {state.phase==='hold' && <><p className="text-sm font-black text-white">Tap cards to <span className="hw-vp-win">Hold</span>, then Draw.</p>{variantId==='jacks-or-better' && <p className="mt-1 text-[10px] text-white/45">{hintBusy?'Coach Ace is calculating every legal hold…':exactHint?'Exact hold calculation ready — Ask Coach Ace for the why.':'Exact strategy available.'}</p>}{variant.wild && <p className="mt-1 flex items-center justify-center gap-1 text-[10px] text-amber-100/60"><Info size={11}/>Wild-card scoring is variant-specific.</p>}</>}
-          {state.phase==='result' && <motionResult result={state.result} />}
+          {state.phase==='result' && <MotionResult result={state.result} />}
         </div>
       </div>
 
@@ -103,7 +103,7 @@ export default function VideoPokerTable({ game }) {
   </GameShell>;
 }
 
-function motionResult({result}) {
+function MotionResult({result}) {
   if(!result) return null;
   return <div className="rounded-2xl border border-white/8 bg-black/15 p-2.5"><p className={`font-heading text-xl font-black ${result.payout>0?'hw-vp-win':'hw-vp-danger'}`}>{result.name}</p><p className="mt-1 text-xs text-white/55">{result.payout>0?`Paid ${result.payout} credits · Net ${result.net>=0?'+':''}${result.net}`:'No payout this hand'}</p></div>;
 }
