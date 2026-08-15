@@ -24,3 +24,13 @@ test('native controller waits for web ready and surfaces startup failures', () =
   assert.match(source, /webViewWebContentProcessDidTerminate/);
   assert.match(source, /retry/);
 });
+
+test('native controller exposes deterministic simulator ready and error marker files', () => {
+  const source = fs.readFileSync(controllerPath, 'utf8');
+  assert.match(source, /holdwise-boot-ready/);
+  assert.match(source, /holdwise-boot-error\.txt/);
+  assert.match(source, /Library\/Caches|cachesDirectory/);
+  assert.match(source, /writeBootReadyMarker/);
+  assert.match(source, /writeBootErrorMarker/);
+  assert.match(source, /clearBootMarkers/);
+});
