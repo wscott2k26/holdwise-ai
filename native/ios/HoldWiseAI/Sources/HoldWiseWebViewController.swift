@@ -8,6 +8,8 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
     private let bootView = StormAndMeBootView()
     private let hapticHandlerName = "holdwiseHaptics"
     private let bootHandlerName = "holdwiseBoot"
+    private let readyMarkerName = "holdwise-boot-ready"
+    private let errorMarkerName = "holdwise-boot-error.txt"
     private var bootTimeoutWorkItem: DispatchWorkItem?
 
     override func loadView() {
@@ -84,7 +86,31 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
         retryBoot()
     }
 
+    private func markerURL(named name: String) -> URL? {
+        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?.appendingPathComponent(name)
+    }
+
+    private func clearBootMarkers() {
+        let fileManager = FileManager.default
+        for name in [readyMarkerName, errorMarkerName] {
+            if let url = markerURL(named: name) {
+                try? fileManager.removeItem(at: url)
+            }
+        }
+    }
+
+    private func writeBootReadyMarker() {
+        guard let url = markerURL(named: readyMarkerName) else { return }
+        try? "ready".write(to: url, atomically: true, encoding: .utf8)
+    }
+
+    private func writeBootErrorMarker(_ message: String) {
+        guard let url = markerURL(named: errorMarkerName) else { return }
+        try? message.write(to: url, atomically: true, encoding: .utf8)
+    }
+
     private func startBootExperience() {
+        clearBootMarkers()
         bootView.showLoading(productName: "HoldWise AI")
         scheduleBootTimeout()
     }
@@ -103,6 +129,7 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
 
     private func retryBoot() {
         refreshControl.endRefreshing()
+        clearBootMarkers()
         bootView.showLoading(productName: "HoldWise AI")
         scheduleBootTimeout()
         loadBundledApp()
@@ -127,6 +154,8 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
     private func showBootFailure(message: String, details: String?) {
         bootTimeoutWorkItem?.cancel()
         refreshControl.endRefreshing()
+        let diagnostic = [message, details].compactMap { $0 }.joined(separator: "\n")
+        writeBootErrorMarker(diagnostic)
         bootView.showFailure(message: message, details: details) { [weak self] in
             self?.retryBoot()
         }
@@ -181,13 +210,16 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
             switch type {
             case "ready":
                 bootTimeoutWorkItem?.cancel()
+                writeBootReadyMarker()
                 print("HOLDWISE_BOOT_READY")
                 bootView.dismissReady()
             case "error":
                 let name = payload["name"] as? String ?? "Error"
                 let detail = payload["message"] as? String ?? "Unknown startup error"
-                print("HOLDWISE_BOOT_ERROR \(name): \(detail)")
-                showBootFailure(message: "HoldWise AI hit a startup error.", details: "\(name): \(detail)")
+                let diagnostic = "\(name): \(detail)"
+                writeBootErrorMarker(diagnostic)
+                print("HOLDWISE_BOOT_ERROR \(diagnostic)")
+                showBootFailure(message: "HoldWise AI hit a startup error.", details: diagnostic)
             default:
                 break
             }
