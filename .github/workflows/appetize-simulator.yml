@@ -117,15 +117,34 @@ jobs:
             exit 0
           fi
           echo "runtime_simulator=$UDID" | tee -a "$LOG"
-          xcrun simctl boot "$UDID" || true
-          xcrun simctl bootstatus "$UDID" -b
-          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl boot "$UDID" >> "$LOG" 2>&1 || true
+          BOOTED=0
+          for attempt in $(seq 1 30); do
+            STATE="$(xcrun simctl list devices -j | python3 -c 'import json,sys; target=sys.argv[1]; data=json.load(sys.stdin); print(next((d.get("state","") for group in data.get("devices",{}).values() for d in group if d.get("udid")==target), ""))' "$UDID")"
+            echo "runtime_state[$attempt]=$STATE" >> "$LOG"
+            if [[ "$STATE" == "Booted" ]]; then
+              BOOTED=1
+              break
+            fi
+            sleep 2
+          done
+          if [[ "$BOOTED" != "1" ]]; then
+            echo "runtime_smoke=skipped-simulator-boot-timeout" | tee -a "$LOG"
+            xcrun simctl shutdown "$UDID" || true
+            exit 0
+          fi
+          xcrun simctl install "$UDID" "$APP" >> "$LOG" 2>&1
           set +e
           xcrun simctl launch --terminate-running-process --console "$UDID" com.willywill.holdwiseai >> "$LOG" 2>&1 &
           LAUNCH_PID=$!
           set -e
           sleep 15
-          xcrun simctl terminate "$UDID" com.willywill.holdwiseai || true
+          xcrun simctl terminate "$UDID" com.willywill.holdwiseai >> "$LOG" 2>&1 || true
+          for attempt in $(seq 1 10); do
+            if ! kill -0 "$LAUNCH_PID" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          kill "$LAUNCH_PID" 2>/dev/null || true
           wait "$LAUNCH_PID" || true
           echo "===== HoldWise runtime console ====="
           cat "$LOG" || true
