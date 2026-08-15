@@ -94,14 +94,14 @@ test('showdown settlement is side-pot safe and preserves every chip', () => {
   assert.ok(state.potResults.length >= 2);
 });
 
-test('next hand rotates dealer and preserves stacks', () => {
+test('next hand rotates dealer and preserves every player chip total while reposting blinds', () => {
   let state = texasHoldemEngine.createGame({ seed: 21, startingStack: 200 });
   while (!state.handComplete) state = texasHoldemEngine.applyAction(state, { type:'fold', actor:state.actor });
   const dealer = state.dealer;
-  const stacks = state.players.map(p=>p.stack);
+  const priorStacks = state.players.map(p=>p.stack);
   state = startNextHand(state);
   assert.equal(state.dealer, (dealer + 1) % 4);
-  assert.deepEqual(state.players.map(p=>p.stack), stacks.map((s,i)=>s));
+  assert.deepEqual(state.players.map(p=>p.stack+p.contribution), priorStacks);
   assert.equal(state.handNumber, 2);
   assert.equal(state.handComplete, false);
 });
