@@ -17,10 +17,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install --no-audit --no-fund
       - name: Card Academy focused tests
         run: |
           set -euo pipefail
           node --test tests/native-ready-source.test.mjs tests/card-academy-catalog.test.mjs tests/tutorial-contract.test.mjs tests/card-academy-progress.test.mjs tests/card-academy-routing.test.mjs tests/card-academy-visual.test.mjs tests/poker-evaluator.test.mjs tests/texas-holdem-engine.test.mjs tests/texas-holdem-ui.test.mjs tests/video-poker-variants.test.mjs tests/video-poker-ui.test.mjs tests/video-poker-result-component.test.mjs tests/video-poker-no-dead-control.test.mjs tests/blackjack-engine.test.mjs
+      - run: npm install --no-audit --no-fund
       - name: Production web build
         run: npm run build
