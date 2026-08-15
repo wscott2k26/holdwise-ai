@@ -1,0 +1,129 @@
+name: Appetize Simulator Build
+
+on:
+  push:
+    branches:
+      - appetize-preview
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: QA and build iOS Simulator
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout preview lane
+        uses: actions/checkout@v4
+
+      - name: Reconstruct sealed build source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p buildsrc
+          cat .appetize/source.part.* > "$RUNNER_TEMP/holdwise-build-source.tar.gz"
+          ACTUAL="$(shasum -a 256 "$RUNNER_TEMP/holdwise-build-source.tar.gz" | awk '{print $1}')"
+          EXPECTED="e40790ecadf0f027f653e4a0352889fba9de051dfa92ff08656e0979f039c625"
+          echo "source_sha256=$ACTUAL"
+          test "$ACTUAL" = "$EXPECTED"
+          tar -xzf "$RUNNER_TEMP/holdwise-build-source.tar.gz" -C buildsrc
+
+      - name: Report build environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "arch=$(uname -m)"
+          xcodebuild -version
+          node --version
+          npm --version
+
+      - name: Install XcodeGen
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install xcodegen
+          fi
+          xcodegen --version
+
+      - name: Install locked dependencies
+        working-directory: buildsrc
+        shell: bash
+        run: npm ci --no-audit --no-fund
+
+      - name: Fresh full web QA
+        working-directory: buildsrc
+        shell: bash
+        run: npm run qa
+
+      - name: Fresh gameplay audit
+        working-directory: buildsrc
+        shell: bash
+        run: npm run audit:gameplay
+
+      - name: Generate iOS project
+        working-directory: buildsrc/native/ios/HoldWiseAI
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodegen generate --spec project.yml
+
+      - name: Build ARM iOS Simulator app
+        working-directory: buildsrc/native/ios/HoldWiseAI
+        shell: bash
+        run: |
+          set -euo pipefail
+          DERIVED="$RUNNER_TEMP/HoldWiseDerivedData"
+          rm -rf "$DERIVED"
+          xcodebuild \
+            -project HoldWiseAI.xcodeproj \
+            -scheme HoldWiseAI \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$DERIVED" \
+            CODE_SIGNING_ALLOWED=NO \
+            ONLY_ACTIVE_ARCH=NO \
+            clean build
+
+      - name: Verify simulator artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          PRODUCT_DIR="$RUNNER_TEMP/HoldWiseDerivedData/Build/Products/Debug-iphonesimulator"
+          APP="$(find "$PRODUCT_DIR" -maxdepth 1 -name '*.app' -type d -print -quit)"
+          test -n "$APP"
+          echo "APP=$APP" >> "$GITHUB_ENV"
+          EXE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Info.plist")"
+          BUNDLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")"
+          echo "app=$APP"
+          echo "bundle_id=$BUNDLE"
+          echo "executable=$EXE"
+          file "$APP/$EXE"
+          lipo -info "$APP/$EXE"
+          test "$BUNDLE" = "com.willywill.holdwiseai"
+          lipo -archs "$APP/$EXE" | tr ' ' '\n' | grep -qx arm64
+          test -f "$APP/www/index.html"
+          echo "native_web_bundle=present"
+
+      - name: Package Appetize ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/HoldWise-AI-Appetize-Simulator-v1.4.0.zip"
+          rm -f "$OUT"
+          ditto -c -k --sequesterRsrc --keepParent "$APP" "$OUT"
+          unzip -t "$OUT"
+          echo "ZIP_PATH=$OUT" >> "$GITHUB_ENV"
+          shasum -a 256 "$OUT"
+
+      - name: Upload verified simulator ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: HoldWise-AI-Appetize-Simulator-v1.4.0
+          path: ${{ env.ZIP_PATH }}
+          if-no-files-found: error
+          retention-days: 7
