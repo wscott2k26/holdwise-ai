@@ -65,7 +65,10 @@ jobs:
 
       - name: Bundle native web assets
         shell: bash
-        run: bash native/ios/HoldWiseAI/Scripts/prepare_web.sh
+        run: |
+          set -euo pipefail
+          bash native/ios/HoldWiseAI/Scripts/prepare_web.sh
+          node scripts/verify-native-web.mjs native/ios/HoldWiseAI/Resources/www
 
       - name: Generate iOS project
         working-directory: native/ios/HoldWiseAI
@@ -103,7 +106,53 @@ jobs:
           [[ " $ARCHS " == *" arm64 "* ]]
           test -n "$WEB_INDEX"
           grep -q "root" "$WEB_INDEX"
+          grep -q "data-holdwise-native-inline" "$WEB_INDEX"
           echo "native_web_bundle=present"
+
+      - name: Smoke test real simulator boot
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEVICE="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; data=json.load(sys.stdin); items=[d for ds in data.get("devices",{}).values() for d in ds if d.get("isAvailable") and "iPhone" in d.get("name","")]; print(items[0]["udid"] if items else "")')"
+          if [[ -z "$DEVICE" ]]; then
+            echo "runtime_smoke=SKIP (no available iPhone Simulator device on runner)"
+            exit 0
+          fi
+
+          LOG="$RUNNER_TEMP/holdwise-runtime.log"
+          SHOT="$RUNNER_TEMP/holdwise-runtime.png"
+          xcrun simctl boot "$DEVICE" >/dev/null 2>&1 || true
+          xcrun simctl bootstatus "$DEVICE" -b
+          xcrun simctl install "$DEVICE" "$APP"
+          xcrun simctl terminate "$DEVICE" com.willywill.holdwiseai >/dev/null 2>&1 || true
+
+          : > "$LOG"
+          xcrun simctl launch --console "$DEVICE" com.willywill.holdwiseai >"$LOG" 2>&1 &
+          CONSOLE_PID=$!
+          READY=0
+          for _ in $(seq 1 30); do
+            if grep -q "HOLDWISE_BOOT_READY" "$LOG"; then
+              READY=1
+              break
+            fi
+            if grep -q "HOLDWISE_BOOT_ERROR" "$LOG"; then
+              echo "Runtime reported a web startup error:"
+              cat "$LOG"
+              kill "$CONSOLE_PID" >/dev/null 2>&1 || true
+              exit 1
+            fi
+            sleep 1
+          done
+
+          kill "$CONSOLE_PID" >/dev/null 2>&1 || true
+          if [[ "$READY" != "1" ]]; then
+            echo "HoldWise did not report ready within 30 seconds. Console output:"
+            cat "$LOG"
+            xcrun simctl io "$DEVICE" screenshot "$SHOT" >/dev/null 2>&1 || true
+            exit 1
+          fi
+          echo "runtime_smoke=PASS HOLDWISE_BOOT_READY"
+          xcrun simctl shutdown "$DEVICE" >/dev/null 2>&1 || true
 
       - name: Package Appetize ZIP
         shell: bash
