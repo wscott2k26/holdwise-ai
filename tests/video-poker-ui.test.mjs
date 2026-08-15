@@ -4,14 +4,14 @@ import fs from 'node:fs';
 
 const read = path => fs.readFileSync(new URL(path, import.meta.url),'utf8');
 
-test('VideoPokerTable exposes six authentic full modes with premium machine controls', () => {
+test('VideoPokerTable exposes six catalog-driven full modes with premium machine controls', () => {
   const table = read('../src/components/games/VideoPokerTable.jsx');
   for (const token of ['VIDEO_POKER_VARIANTS','videoPokerEngine','GlassSurface','TactilePressable','PlayingCard','Pay Table','Credits','Deal','Draw','Hold','New Hand','Ask Coach Ace']) {
     assert.ok(table.includes(token), `VideoPokerTable must include ${token}`);
   }
   assert.ok(table.includes('hw-vp-machine'));
-  assert.ok(table.includes('jacks-or-better'));
-  assert.ok(table.includes('joker-poker'));
+  assert.match(table,/Object\.keys\(VIDEO_POKER_VARIANTS\)/);
+  assert.match(table,/VIDEO_POKER_IDS\.map/);
 });
 
 test('GameRoom routes all six video poker games to VideoPokerTable', () => {
