@@ -6,6 +6,7 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
     private var storeKitBridge: HoldWiseStoreKitBridge!
     private let refreshControl = UIRefreshControl()
     private let hapticHandlerName = "holdwiseHaptics"
+    private let bootHandlerName = "holdwiseBoot"
 
     override func loadView() {
         let configuration = WKWebViewConfiguration()
@@ -13,6 +14,7 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
         configuration.mediaTypesRequiringUserActionForPlayback = []
         configuration.websiteDataStore = .default()
         configuration.userContentController.add(self, name: hapticHandlerName)
+        configuration.userContentController.add(self, name: bootHandlerName)
 
         let nativeScript = """
         window.HoldWiseNative = Object.freeze({
@@ -24,6 +26,24 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
         """
         configuration.userContentController.addUserScript(
             WKUserScript(source: nativeScript, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+        )
+
+        let diagnosticsScript = """
+        window.addEventListener('error', function(event) {
+          window.webkit?.messageHandlers?.holdwiseBoot?.postMessage({
+            type: 'error',
+            message: String(event?.message || 'Unknown JavaScript error').slice(0, 500)
+          });
+        });
+        window.addEventListener('unhandledrejection', function(event) {
+          window.webkit?.messageHandlers?.holdwiseBoot?.postMessage({
+            type: 'error',
+            message: String(event?.reason?.message || event?.reason || 'Unhandled promise rejection').slice(0, 500)
+          });
+        });
+        """
+        configuration.userContentController.addUserScript(
+            WKUserScript(source: diagnosticsScript, injectionTime: .atDocumentStart, forMainFrameOnly: true)
         )
 
         webView = WKWebView(frame: .zero, configuration: configuration)
@@ -51,6 +71,7 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
 
     deinit {
         webView?.configuration.userContentController.removeScriptMessageHandler(forName: hapticHandlerName)
+        webView?.configuration.userContentController.removeScriptMessageHandler(forName: bootHandlerName)
     }
 
     override func viewDidLoad() {
@@ -64,10 +85,12 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
 
     private func loadBundledApp() {
         guard let indexURL = Bundle.main.url(forResource: "index", withExtension: "html", subdirectory: "www") else {
+            print("HOLDWISE_NAV_ERROR:missing bundled www/index.html")
             showMissingBundlePage()
             return
         }
         let directoryURL = indexURL.deletingLastPathComponent()
+        print("HOLDWISE_LOAD_URL:\(indexURL.path)")
         webView.loadFileURL(indexURL, allowingReadAccessTo: directoryURL)
     }
 
@@ -83,10 +106,21 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         refreshControl.endRefreshing()
+        print("HOLDWISE_NAV_FINISHED")
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         refreshControl.endRefreshing()
+        print("HOLDWISE_NAV_ERROR:\(error.localizedDescription)")
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        refreshControl.endRefreshing()
+        print("HOLDWISE_NAV_ERROR:\(error.localizedDescription)")
+    }
+
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        print("HOLDWISE_WEB_ERROR:web content process terminated")
     }
 
     func webView(
@@ -117,6 +151,18 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
     }
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        if message.name == bootHandlerName {
+            guard let payload = message.body as? [String: Any],
+                  let type = payload["type"] as? String else { return }
+            if type == "error" {
+                let detail = (payload["message"] as? String ?? "Unknown JavaScript startup error")
+                    .replacingOccurrences(of: "\n", with: " ")
+                    .prefix(500)
+                print("HOLDWISE_WEB_ERROR:\(detail)")
+            }
+            return
+        }
+
         guard message.name == hapticHandlerName, let type = message.body as? String else { return }
         switch type {
         case "success":
