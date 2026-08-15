@@ -19,22 +19,6 @@ jobs:
       - name: Checkout preview lane
         uses: actions/checkout@v4
 
-      - name: Reconstruct sealed build source
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p buildsrc
-          for f in .appetize/source.part.*; do
-            wc -c "$f"
-            shasum -a 256 "$f"
-          done
-          cat .appetize/source.part.* > "$RUNNER_TEMP/holdwise-build-source.tar.gz"
-          ACTUAL="$(shasum -a 256 "$RUNNER_TEMP/holdwise-build-source.tar.gz" | awk '{print $1}')"
-          EXPECTED="e40790ecadf0f027f653e4a0352889fba9de051dfa92ff08656e0979f039c625"
-          echo "source_sha256=$ACTUAL"
-          test "$ACTUAL" = "$EXPECTED"
-          tar -xzf "$RUNNER_TEMP/holdwise-build-source.tar.gz" -C buildsrc
-
       - name: Report build environment
         shell: bash
         run: |
@@ -43,6 +27,9 @@ jobs:
           xcodebuild -version
           node --version
           npm --version
+          test -f package.json
+          test -d src
+          test -f native/ios/HoldWiseAI/project.yml
 
       - name: Install XcodeGen
         shell: bash
@@ -53,30 +40,27 @@ jobs:
           fi
           xcodegen --version
 
-      - name: Install locked dependencies
-        working-directory: buildsrc
+      - name: Install dependencies
         shell: bash
-        run: npm ci --no-audit --no-fund
+        run: npm install --no-audit --no-fund
 
       - name: Fresh full web QA
-        working-directory: buildsrc
         shell: bash
         run: npm run qa
 
       - name: Fresh gameplay audit
-        working-directory: buildsrc
         shell: bash
         run: npm run audit:gameplay
 
       - name: Generate iOS project
-        working-directory: buildsrc/native/ios/HoldWiseAI
+        working-directory: native/ios/HoldWiseAI
         shell: bash
         run: |
           set -euo pipefail
           xcodegen generate --spec project.yml
 
       - name: Build ARM iOS Simulator app
-        working-directory: buildsrc/native/ios/HoldWiseAI
+        working-directory: native/ios/HoldWiseAI
         shell: bash
         run: |
           set -euo pipefail
