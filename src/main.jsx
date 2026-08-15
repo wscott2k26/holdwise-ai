@@ -8,10 +8,10 @@ installNativeBootErrorForwarding()
 
 function BootReadyReporter() {
   useEffect(() => {
-    if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
-      const frame = window.requestAnimationFrame(() => reportNativeBootReady())
-      return () => window.cancelAnimationFrame?.(frame)
-    }
+    // React has committed successfully if this effect runs. Report readiness
+    // immediately instead of waiting on requestAnimationFrame: fresh iOS
+    // Simulator GPU processes can stall the first frame even when JS/React is
+    // healthy, which previously produced a false native boot timeout.
     reportNativeBootReady()
     return undefined
   }, [])
