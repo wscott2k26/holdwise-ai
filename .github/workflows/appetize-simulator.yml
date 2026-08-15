@@ -5,6 +5,7 @@ on:
     branches:
       - appetize-preview
       - appetize-runtime-fix-v2
+      - card-academy-full-v1
   workflow_dispatch:
 
 permissions:
