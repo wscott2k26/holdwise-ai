@@ -67,6 +67,10 @@ jobs:
         shell: bash
         run: bash native/ios/HoldWiseAI/Scripts/prepare_web.sh
 
+      - name: Verify native preview bootstrap contract
+        shell: bash
+        run: node --test tests/native-package.test.mjs
+
       - name: Generate iOS project
         working-directory: native/ios/HoldWiseAI
         shell: bash
