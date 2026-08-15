@@ -1,0 +1,23 @@
+.hw-vp-machine {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(230,188,92,.2), transparent 28%),
+    radial-gradient(circle at 16% 28%, rgba(21,131,94,.18), transparent 24%),
+    linear-gradient(180deg, #08141a 0%, #061015 42%, #03090d 100%);
+  border: 1px solid rgba(236,203,126,.3);
+  box-shadow: inset 0 1px rgba(255,255,255,.07), inset 0 -34px 80px rgba(0,0,0,.38), 0 28px 70px rgba(0,0,0,.42);
+}
+.hw-vp-screen {
+  background: linear-gradient(180deg, rgba(5,73,55,.94), rgba(3,47,41,.96));
+  border: 1px solid rgba(244,215,144,.18);
+  box-shadow: inset 0 18px 44px rgba(29,157,111,.08), inset 0 -22px 48px rgba(0,0,0,.34), 0 12px 28px rgba(0,0,0,.26);
+}
+.hw-vp-paytable {
+  background: linear-gradient(180deg, rgba(7,18,24,.94), rgba(3,10,14,.96));
+  border: 1px solid rgba(255,255,255,.08);
+}
+.hw-vp-held { box-shadow: 0 0 0 2px rgba(237,199,111,.72), 0 0 25px rgba(237,199,111,.16); }
+.hw-vp-win { color: #f0cd76; text-shadow: 0 0 18px rgba(240,205,118,.3); }
+.hw-vp-danger { color: #f1707d; }
+.hw-vp-ruby-button { background: linear-gradient(180deg,#a92d45,#681527); }
