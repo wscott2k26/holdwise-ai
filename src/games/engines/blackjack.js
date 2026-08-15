@@ -180,6 +180,7 @@ function legalActions(state) {
     if (state.rules.insurance && state.bankroll >= wager) actions.push({ type: 'take-insurance', amount: wager });
     return actions;
   }
+  if (state.phase === 'result') return [{ type: 'new-round' }];
   if (state.phase !== 'player') return [];
   const hand = activeHand(state);
   if (!hand || hand.stood || blackjackValue(hand.cards).bust) return [];
