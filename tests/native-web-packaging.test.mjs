@@ -18,6 +18,7 @@ function fixture() {
 <link rel="manifest" href="/manifest.json">
 <script type="module" crossorigin src="./assets/index-abc.js"></script>
 <link rel="stylesheet" crossorigin href="./assets/index-abc.css">
+<script type="module">fetch('/api/app-logs/demo/log-user-in-app/home'); history.replaceState({}, document.title, location.pathname);</script>
 </head><body><div id="root"></div></body></html>`);
   return root;
 }
@@ -34,6 +35,7 @@ test('native transform inlines first-paint assets and preserves lazy/worker reso
   assert.doesNotMatch(html, /href="\.\/assets\/index-[^"]+\.css"/);
   assert.doesNotMatch(html, /base44\.com\/logo_v2\.svg/);
   assert.doesNotMatch(html, /\/manifest\.json/);
+  assert.doesNotMatch(html, /log-user-in-app/);
   assert.match(html, /import\("\.\/assets\/CoachAcePanel-def\.js"\)/);
   assert.match(html, /new URL\("\.\/assets\/strategyWorker-ghi\.js", import\.meta\.url\)/);
   assert.equal(fs.existsSync(path.join(root, 'assets', 'strategyWorker-ghi.js')), true);
