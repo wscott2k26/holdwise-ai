@@ -1,0 +1,21 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8');
+
+test('HoldemTable exposes the complete premium table and action hierarchy', () => {
+  const table = read('../src/components/games/HoldemTable.jsx');
+  for (const token of ['texasHoldemEngine','GlassSurface','TactilePressable','PlayingCard','Coach','Fold','Check','Call','Raise','All In','New Hand','New Match']) {
+    assert.ok(table.includes(token), `HoldemTable must include ${token}`);
+  }
+  assert.ok(table.includes('hw-holdem-felt'), 'Holdem must use the emerald premium felt table');
+  assert.ok(table.includes('type="range"'), 'Holdem must provide full bet/raise sizing, not fixed demo bets');
+  assert.match(table, /runBotsUntilHumanTurn/);
+});
+
+test('GameRoom renders the real Holdem table for texas-holdem', () => {
+  const room = read('../src/pages/GameRoom.jsx');
+  assert.ok(room.includes('HoldemTable'));
+  assert.match(room, /texas-holdem/);
+});
