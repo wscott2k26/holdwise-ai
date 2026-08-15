@@ -105,6 +105,34 @@ jobs:
           grep -q "root" "$WEB_INDEX"
           echo "native_web_bundle=present"
 
+      - name: Runtime smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          LOG="$RUNNER_TEMP/holdwise-runtime.log"
+          UDID="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; data=json.load(sys.stdin); print(next((d["udid"] for group in data.get("devices",{}).values() for d in group if d.get("isAvailable") and d.get("name","").startswith("iPhone")), ""))')"
+          if [[ -z "$UDID" ]]; then
+            echo "runtime_smoke=skipped-no-compatible-simulator"
+            exit 0
+          fi
+          echo "runtime_simulator=$UDID"
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" "$APP"
+          : > "$LOG"
+          set +e
+          xcrun simctl launch --terminate-running-process --console "$UDID" com.willywill.holdwiseai > "$LOG" 2>&1 &
+          LAUNCH_PID=$!
+          set -e
+          sleep 15
+          xcrun simctl terminate "$UDID" com.willywill.holdwiseai || true
+          wait "$LAUNCH_PID" || true
+          echo "===== HoldWise runtime console ====="
+          cat "$LOG" || true
+          echo "===== HOLDWISE markers ====="
+          grep 'HOLDWISE_' "$LOG" || true
+          xcrun simctl shutdown "$UDID" || true
+
       - name: Package Appetize ZIP
         shell: bash
         run: |
