@@ -90,12 +90,14 @@ jobs:
           echo "APP=$APP" >> "$GITHUB_ENV"
           EXE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Info.plist")"
           BUNDLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")"
+          ARCHS="$(lipo -archs "$APP/$EXE")"
           echo "app=$APP"
           echo "bundle_id=$BUNDLE"
+          echo "architectures=$ARCHS"
           file "$APP/$EXE"
           lipo -info "$APP/$EXE"
           test "$BUNDLE" = "com.willywill.holdwiseai"
-          lipo -archs "$APP/$EXE" | tr ' ' '\n' | grep -qx arm64
+          [[ " $ARCHS " == *" arm64 "* ]]
           test -f "$APP/www/index.html"
           grep -q "root" "$APP/www/index.html"
           echo "native_web_bundle=present"
