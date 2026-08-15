@@ -94,7 +94,7 @@ export default function VideoPokerTable({ game }) {
         <TactilePressable disabled={state.bankroll<state.credits} onClick={()=>apply({type:'deal'})} className="rounded-2xl bg-[hsl(var(--hw-gold))] text-lg font-black text-[hsl(var(--hw-navy))]"><Coins size={19} className="mr-2 inline"/>Deal</TactilePressable>
       </div>}
 
-      {state.phase==='hold' && <div className="mt-3 grid grid-cols-[.75fr_1.25fr] gap-3"><TactilePressable onClick={()=>state.hand.forEach((_,index)=>{ if(state.holdMask[index]){} })} className="rounded-2xl bg-white/6 px-3 py-3 text-xs font-black text-white shadow-none">Hold selected</TactilePressable><TactilePressable onClick={()=>apply({type:'draw'})} className="rounded-2xl bg-[hsl(var(--hw-gold))] px-4 py-3.5 text-lg font-black text-[hsl(var(--hw-navy))]">Draw</TactilePressable></div>}
+      {state.phase==='hold' && <div className="mt-3 grid grid-cols-[.75fr_1.25fr] gap-3"><GlassSurface strength={2} className="flex min-h-[44px] items-center justify-center rounded-2xl px-3 py-3 text-xs font-black text-white/70">Held {state.holdMask.filter(Boolean).length} of 5</GlassSurface><TactilePressable onClick={()=>apply({type:'draw'})} className="rounded-2xl bg-[hsl(var(--hw-gold))] px-4 py-3.5 text-lg font-black text-[hsl(var(--hw-navy))]">Draw</TactilePressable></div>}
 
       {state.phase==='result' && <div className="mt-3"><TactilePressable onClick={()=>apply({type:'new-hand'})} className="w-full rounded-2xl bg-[hsl(var(--hw-gold))] px-4 py-3.5 text-base font-black text-[hsl(var(--hw-navy))]"><Sparkles size={18} className="mr-2 inline"/>New Hand</TactilePressable></div>}
 
