@@ -124,35 +124,52 @@ jobs:
           xcrun simctl boot "$DEVICE" >/dev/null 2>&1 || true
           xcrun simctl bootstatus "$DEVICE" -b
           xcrun simctl install "$DEVICE" "$APP"
-          xcrun simctl terminate "$DEVICE" com.willywill.holdwiseai >/dev/null 2>&1 || true
+          DATA_CONTAINER="$(xcrun simctl get_app_container "$DEVICE" com.willywill.holdwiseai data)"
+          READY_MARKER="$DATA_CONTAINER/Library/Caches/holdwise-boot-ready"
+          ERROR_MARKER="$DATA_CONTAINER/Library/Caches/holdwise-boot-error.txt"
+          rm -f "$READY_MARKER" "$ERROR_MARKER"
 
-          : > "$LOG"
-          xcrun simctl launch --console "$DEVICE" com.willywill.holdwiseai >"$LOG" 2>&1 &
-          CONSOLE_PID=$!
+          xcrun simctl terminate "$DEVICE" com.willywill.holdwiseai >/dev/null 2>&1 || true
+          xcrun simctl launch "$DEVICE" com.willywill.holdwiseai
+
           READY=0
           for _ in $(seq 1 30); do
-            if grep -q "HOLDWISE_BOOT_READY" "$LOG"; then
+            if [[ -f "$READY_MARKER" ]]; then
               READY=1
               break
             fi
-            if grep -q "HOLDWISE_BOOT_ERROR" "$LOG"; then
-              echo "Runtime reported a web startup error:"
-              cat "$LOG"
-              kill "$CONSOLE_PID" >/dev/null 2>&1 || true
+            if [[ -f "$ERROR_MARKER" ]]; then
+              echo "Runtime reported a native/web startup error:"
+              cat "$ERROR_MARKER"
+              xcrun simctl io "$DEVICE" screenshot "$SHOT" >/dev/null 2>&1 || true
+              xcrun simctl spawn "$DEVICE" log show --last 60s --style compact --predicate 'process == "HoldWise AI" OR eventMessage CONTAINS "HOLDWISE_BOOT"' >"$LOG" 2>&1 || true
               exit 1
             fi
             sleep 1
           done
 
-          kill "$CONSOLE_PID" >/dev/null 2>&1 || true
+          xcrun simctl io "$DEVICE" screenshot "$SHOT" >/dev/null 2>&1 || true
+          xcrun simctl spawn "$DEVICE" log show --last 60s --style compact --predicate 'process == "HoldWise AI" OR eventMessage CONTAINS "HOLDWISE_BOOT"' >"$LOG" 2>&1 || true
           if [[ "$READY" != "1" ]]; then
-            echo "HoldWise did not report ready within 30 seconds. Console output:"
-            cat "$LOG"
-            xcrun simctl io "$DEVICE" screenshot "$SHOT" >/dev/null 2>&1 || true
+            echo "HoldWise did not create its ready marker within 30 seconds."
+            cat "$LOG" || true
             exit 1
           fi
-          echo "runtime_smoke=PASS HOLDWISE_BOOT_READY"
+
+          echo "runtime_smoke=PASS native ready marker present"
+          test "$(cat "$READY_MARKER")" = "ready"
           xcrun simctl shutdown "$DEVICE" >/dev/null 2>&1 || true
+
+      - name: Upload runtime diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HoldWise-AI-Runtime-Diagnostics
+          path: |
+            ${{ runner.temp }}/holdwise-runtime.png
+            ${{ runner.temp }}/holdwise-runtime.log
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Package Appetize ZIP
         shell: bash
