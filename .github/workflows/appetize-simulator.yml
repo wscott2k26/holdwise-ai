@@ -110,7 +110,10 @@ jobs:
         run: |
           set -euo pipefail
           LOG="$RUNNER_TEMP/holdwise-runtime.log"
+          ULOG="$RUNNER_TEMP/holdwise-unified.log"
+          SCREENSHOT="$RUNNER_TEMP/holdwise-runtime.png"
           : > "$LOG"
+          : > "$ULOG"
           UDID="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; data=json.load(sys.stdin); print(next((d["udid"] for group in data.get("devices",{}).values() for d in group if d.get("isAvailable") and d.get("name","").startswith("iPhone")), ""))')"
           if [[ -z "$UDID" ]]; then
             echo "runtime_smoke=skipped-no-compatible-simulator" | tee -a "$LOG"
@@ -122,10 +125,7 @@ jobs:
           for attempt in $(seq 1 30); do
             STATE="$(xcrun simctl list devices -j | python3 -c 'import json,sys; target=sys.argv[1]; data=json.load(sys.stdin); print(next((d.get("state","") for group in data.get("devices",{}).values() for d in group if d.get("udid")==target), ""))' "$UDID")"
             echo "runtime_state[$attempt]=$STATE" >> "$LOG"
-            if [[ "$STATE" == "Booted" ]]; then
-              BOOTED=1
-              break
-            fi
+            if [[ "$STATE" == "Booted" ]]; then BOOTED=1; break; fi
             sleep 2
           done
           if [[ "$BOOTED" != "1" ]]; then
@@ -134,22 +134,25 @@ jobs:
             exit 0
           fi
           xcrun simctl install "$UDID" "$APP" >> "$LOG" 2>&1
+          xcrun simctl spawn "$UDID" log stream --style compact --level debug --predicate 'eventMessage CONTAINS "HOLDWISE_"' > "$ULOG" 2>&1 &
+          LOG_PID=$!
+          sleep 1
           set +e
           xcrun simctl launch --terminate-running-process --console "$UDID" com.willywill.holdwiseai >> "$LOG" 2>&1 &
           LAUNCH_PID=$!
           set -e
-          sleep 15
+          sleep 12
+          xcrun simctl io "$UDID" screenshot "$SCREENSHOT" >> "$LOG" 2>&1 || true
+          sleep 3
           xcrun simctl terminate "$UDID" com.willywill.holdwiseai >> "$LOG" 2>&1 || true
-          for attempt in $(seq 1 10); do
-            if ! kill -0 "$LAUNCH_PID" 2>/dev/null; then break; fi
-            sleep 1
-          done
           kill "$LAUNCH_PID" 2>/dev/null || true
           wait "$LAUNCH_PID" || true
+          kill "$LOG_PID" 2>/dev/null || true
+          wait "$LOG_PID" || true
           echo "===== HoldWise runtime console ====="
           cat "$LOG" || true
-          echo "===== HOLDWISE markers ====="
-          grep 'HOLDWISE_' "$LOG" || true
+          echo "===== HoldWise unified markers ====="
+          grep 'HOLDWISE_' "$ULOG" || true
           xcrun simctl shutdown "$UDID" || true
 
       - name: Upload runtime diagnostics
@@ -157,7 +160,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: HoldWise-runtime-diagnostics
-          path: ${{ runner.temp }}/holdwise-runtime.log
+          path: |
+            ${{ runner.temp }}/holdwise-runtime.log
+            ${{ runner.temp }}/holdwise-unified.log
+            ${{ runner.temp }}/holdwise-runtime.png
           if-no-files-found: ignore
           retention-days: 2
 
