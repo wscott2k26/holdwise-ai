@@ -15,12 +15,12 @@ test('native shell records web navigation and JavaScript startup failures', () =
   assert.match(controller, /NSLog/);
 });
 
-test('CI boots the built simulator app and captures logs plus a screenshot', () => {
+test('CI boots the built simulator app and captures bounded logs plus a screenshot', () => {
   assert.match(workflow, /Runtime smoke test/);
   assert.match(workflow, /simctl boot/);
   assert.match(workflow, /simctl install/);
   assert.match(workflow, /simctl launch/);
-  assert.match(workflow, /log stream/);
+  assert.match(workflow, /log show/);
   assert.match(workflow, /simctl io/);
   assert.match(workflow, /screenshot/);
   assert.match(workflow, /HOLDWISE_/);
