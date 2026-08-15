@@ -37,8 +37,12 @@ js = js.replace(/new URL\((['"])(?!\.\/|\/|https?:)([^'"/]+\.js)\1\s*,\s*import\
 js = js.replace(/<\/script/gi, '<\\/script');
 css = css.replace(/<\/style/gi, '<\\/style');
 
-html = html.replace(scriptMatch[0], `<script type="module" data-holdwise-native-inline>\n${js}\n</script>`);
-html = html.replace(styleMatch[0], `<style data-holdwise-native-inline>\n${css}\n</style>`);
+// Use function replacers here. The minified application can legitimately
+// contain JavaScript strings such as "$&"; passing the bundle as a plain
+// replacement string would make String.replace interpret those as special
+// replacement tokens and can re-insert the external script tag we removed.
+html = html.replace(scriptMatch[0], () => `<script type="module" data-holdwise-native-inline>\n${js}\n</script>`);
+html = html.replace(styleMatch[0], () => `<style data-holdwise-native-inline>\n${css}\n</style>`);
 html = html.replace(/\s*<link[^>]+href=["']https:\/\/base44\.com\/logo_v2\.svg["'][^>]*>/gi, '');
 html = html.replace(/\s*<link[^>]+rel=["']manifest["'][^>]+href=["']\/manifest\.json["'][^>]*>/gi, '');
 html = html.replace(/\s*<link[^>]+href=["']\/manifest\.json["'][^>]+rel=["']manifest["'][^>]*>/gi, '');
