@@ -6,6 +6,7 @@ import HoldemTable from '@/components/games/HoldemTable';
 import VideoPokerTable, { VIDEO_POKER_IDS } from '@/components/games/VideoPokerTable';
 import BlackjackTable from '@/components/games/BlackjackTable';
 import SolitaireTable, { SOLITAIRE_IDS } from '@/components/games/SolitaireTable';
+import TrickTable, { TRICK_GAME_IDS } from '@/components/games/TrickTable';
 import { getGame } from '@/games/catalog';
 import { getEngine } from '@/games/engineRegistry';
 
@@ -18,6 +19,7 @@ export default function GameRoom() {
   if (VIDEO_POKER_IDS.includes(game.id)) return <VideoPokerTable game={game} />;
   if (game.id === 'blackjack') return <BlackjackTable game={game} />;
   if (SOLITAIRE_IDS.includes(game.id)) return <SolitaireTable game={game} />;
+  if (TRICK_GAME_IDS.includes(game.id)) return <TrickTable game={game} />;
 
   const engine = getEngine(game.id);
   return (
