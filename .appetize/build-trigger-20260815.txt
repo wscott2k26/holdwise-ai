@@ -1,0 +1,1 @@
+Trigger verified Appetize simulator build from staged full-data commit 87bc4f4566e2a7cfc6f062fb0dde59adffb9cfa0.
