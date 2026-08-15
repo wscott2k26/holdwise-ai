@@ -1,0 +1,24 @@
+name: Card Academy Focused CI
+
+on:
+  push:
+    branches:
+      - card-academy-full-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - name: Card Academy focused tests
+        run: |
+          set -euo pipefail
+          node --test tests/native-ready-source.test.mjs tests/card-academy-catalog.test.mjs tests/tutorial-contract.test.mjs tests/card-academy-progress.test.mjs
