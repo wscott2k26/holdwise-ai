@@ -12,6 +12,7 @@ import {
 
 const byId=new Map(createDeck().map(c=>[c.id,c]));
 const cards=(...ids)=>ids.map(id=>structuredClone(byId.get(id)));
+const card=id=>{const found=byId.get(id);assert.ok(found,`missing card ${id}`);return structuredClone(found);};
 
 test('Spades deals 13 cards to four seats and begins partnership bidding left of dealer',()=>{
   const state=spadesEngine.createGame({seed:20,dealer:0,targetScore:500});
@@ -41,10 +42,10 @@ test('Spades trick winner honors trump over lead suit and high trump',()=>{
 
 test('Spades round scoring handles contracts, bags, nil and ten-bag penalty',()=>{
   const result=scoreSpadesRound({bids:[3,0,4,2],tricks:[4,0,4,5],nil:[false,true,false,false],scores:[480,120],bags:[9,2],targetScore:500});
-  assert.equal(result.roundScores[0],-29); // team 0 bid7, 8 tricks => 71 then 10th bag penalty
+  assert.equal(result.roundScores[0],-29); // team 0 bid7, 8 tricks => +71, then 10th bag penalty -100
   assert.equal(result.bags[0],0);
-  assert.equal(result.roundScores[1],172); // bid2 + 3 bags + successful nil
-  assert.equal(result.scores[1],292);
+  assert.equal(result.roundScores[1],123); // bid2 + 3 bags + successful nil = 20 + 3 + 100
+  assert.equal(result.scores[1],243);
 });
 
 test('Spades bot bidding/play always produce legal choices',()=>{
