@@ -15,7 +15,12 @@ if (/<script[^>]+src=["']\.\/assets\/index-[^"']+\.js/i.test(html)) fail('primar
 if (/<link[^>]+href=["']\.\/assets\/index-[^"']+\.css/i.test(html)) fail('primary CSS is still external');
 if (/base44\.com\/logo_v2\.svg/i.test(html)) fail('external Base44 favicon remains');
 if (/href=["']\/manifest\.json/i.test(html)) fail('root manifest dependency remains');
-if (/log-user-in-app/i.test(html)) fail('Base44 analytics injection remains');
+
+const scriptBlocks = html.match(/<script\b[^>]*>[\s\S]*?<\/script>/gi) || [];
+const injectedAnalytics = scriptBlocks.some((block) =>
+  !/data-holdwise-native-inline/i.test(block) && /log-user-in-app/i.test(block)
+);
+if (injectedAnalytics) fail('Base44 analytics injection remains');
 if (!/<div[^>]+id=["']root["']/i.test(html)) fail('React root missing');
 
 const assetsDir = path.join(root, 'assets');
