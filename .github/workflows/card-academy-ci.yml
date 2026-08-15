@@ -21,4 +21,4 @@ jobs:
       - name: Card Academy focused tests
         run: |
           set -euo pipefail
-          node --test tests/native-ready-source.test.mjs tests/card-academy-catalog.test.mjs tests/tutorial-contract.test.mjs tests/card-academy-progress.test.mjs tests/card-academy-routing.test.mjs tests/card-academy-visual.test.mjs tests/poker-evaluator.test.mjs
+          node --test tests/native-ready-source.test.mjs tests/card-academy-catalog.test.mjs tests/tutorial-contract.test.mjs tests/card-academy-progress.test.mjs tests/card-academy-routing.test.mjs tests/card-academy-visual.test.mjs tests/poker-evaluator.test.mjs tests/texas-holdem-engine.test.mjs
