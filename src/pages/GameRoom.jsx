@@ -5,6 +5,7 @@ import GlassSurface from '@/components/premium/GlassSurface';
 import HoldemTable from '@/components/games/HoldemTable';
 import VideoPokerTable, { VIDEO_POKER_IDS } from '@/components/games/VideoPokerTable';
 import BlackjackTable from '@/components/games/BlackjackTable';
+import SolitaireTable, { SOLITAIRE_IDS } from '@/components/games/SolitaireTable';
 import { getGame } from '@/games/catalog';
 import { getEngine } from '@/games/engineRegistry';
 
@@ -16,6 +17,7 @@ export default function GameRoom() {
   if (game.id === 'texas-holdem') return <HoldemTable game={game} />;
   if (VIDEO_POKER_IDS.includes(game.id)) return <VideoPokerTable game={game} />;
   if (game.id === 'blackjack') return <BlackjackTable game={game} />;
+  if (SOLITAIRE_IDS.includes(game.id)) return <SolitaireTable game={game} />;
 
   const engine = getEngine(game.id);
   return (
