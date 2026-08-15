@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import GameShell from '@/components/games/GameShell';
 import GlassSurface from '@/components/premium/GlassSurface';
 import HoldemTable from '@/components/games/HoldemTable';
-import PracticeVP from '@/pages/PracticeVP';
+import VideoPokerTable, { VIDEO_POKER_IDS } from '@/components/games/VideoPokerTable';
 import { getGame } from '@/games/catalog';
 import { getEngine } from '@/games/engineRegistry';
 
@@ -13,7 +13,7 @@ export default function GameRoom() {
   if (!game) return <div className="p-6 text-white">Unknown card game.</div>;
 
   if (game.id === 'texas-holdem') return <HoldemTable game={game} />;
-  if (game.id === 'jacks-or-better') return <PracticeVP />;
+  if (VIDEO_POKER_IDS.includes(game.id)) return <VideoPokerTable game={game} />;
 
   const engine = getEngine(game.id);
   return (
