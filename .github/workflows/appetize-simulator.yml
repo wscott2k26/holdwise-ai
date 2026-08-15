@@ -56,7 +56,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          node --test tests/native-boot.test.mjs tests/daily-engagement.test.mjs tests/haptics.test.mjs tests/mastery.test.mjs tests/premium-visual.test.mjs
+          node --test tests/native-boot.test.mjs tests/app-params-native.test.mjs tests/daily-engagement.test.mjs tests/haptics.test.mjs tests/mastery.test.mjs tests/premium-visual.test.mjs
           npm run build
 
       - name: Fresh exhaustive gameplay audit
