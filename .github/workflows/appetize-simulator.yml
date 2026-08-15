@@ -91,15 +91,17 @@ jobs:
           EXE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Info.plist")"
           BUNDLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")"
           ARCHS="$(lipo -archs "$APP/$EXE")"
+          WEB_INDEX="$(find "$APP" -type f -name 'index.html' -print -quit)"
           echo "app=$APP"
           echo "bundle_id=$BUNDLE"
           echo "architectures=$ARCHS"
+          echo "web_index=$WEB_INDEX"
           file "$APP/$EXE"
           lipo -info "$APP/$EXE"
           test "$BUNDLE" = "com.willywill.holdwiseai"
           [[ " $ARCHS " == *" arm64 "* ]]
-          test -f "$APP/www/index.html"
-          grep -q "root" "$APP/www/index.html"
+          test -n "$WEB_INDEX"
+          grep -q "root" "$WEB_INDEX"
           echo "native_web_bundle=present"
 
       - name: Package Appetize ZIP
