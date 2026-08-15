@@ -17,4 +17,6 @@ npm run build:native
 rm -rf "$WWW_DIR"
 mkdir -p "$WWW_DIR"
 cp -R dist/. "$WWW_DIR/"
-printf 'Bundled web app into %s\n' "$WWW_DIR"
+node scripts/inline-native-web.mjs "$WWW_DIR"
+node scripts/verify-native-web.mjs "$WWW_DIR"
+printf 'Bundled hardened web app into %s\n' "$WWW_DIR"
