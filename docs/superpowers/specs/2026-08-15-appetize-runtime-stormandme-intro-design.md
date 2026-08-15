@@ -16,22 +16,22 @@ Make the iOS Simulator package visibly boot into the HoldWise AI video-poker tra
 - The preview already uses `HashRouter`, so neither an absolute Vite base nor `BrowserRouter` is the current root cause.
 - The packaged HTML still boots through external local subresources (`./assets/index-*.js` as `type="module"` and `./assets/index-*.css`) under `file://`.
 - WebKit has long-standing local-file origin/subresource restrictions. A blank root with a loaded shell is consistent with a startup script/subresource failure, but the current native shell does not surface JavaScript errors.
-- Startup code also performs history mutation and Base44 initialization, so runtime diagnostics must identify the exact failing boundary before any broad refactor.
+- Startup code also performs history mutation and Base44 initialization, so the exact failing boundary must be measured before applying a runtime fix.
 
 ## Approaches considered
 
 ### A. Harden the existing `file://` preview lane — recommended
 
-Keep the current lightweight native wrapper. Add deterministic boot diagnostics, remove avoidable local-file startup hazards, and inline the critical boot CSS/JavaScript into the native preview HTML so React does not depend on external local module loading for first paint.
+Keep the current lightweight native wrapper. First add deterministic boot diagnostics and reproduce the current failure in an iOS Simulator. Then make the smallest correction supported by that evidence. If the failing boundary is local external module loading, inline the critical first-paint CSS/JavaScript into the native preview HTML so React does not depend on that boundary for first paint.
 
 Pros:
 - Smallest change to the preview branch.
 - No new native dependency or local server.
-- Avoids the most fragile `file://` external module boundary for initial render.
+- Lets us prove the root cause rather than stack guesses.
 - Easy to verify in CI and easy to revert.
 
 Trade-off:
-- The exact-strategy worker remains a separate resource. If WebKit blocks the worker, existing code already falls back to the synchronous strategy engine; the app remains playable.
+- If first-paint inlining is required, the exact-strategy worker remains a separate resource. If WebKit blocks the worker, existing code already falls back to the synchronous strategy engine; the app remains playable.
 
 ### B. Serve bundle resources through `WKURLSchemeHandler`
 
@@ -50,9 +50,9 @@ Pros:
 
 Trade-offs:
 - Highest complexity and maintenance cost.
-- Unnecessary for a preview shell whose primary goal is to demonstrate the trainer quickly.
+- Unnecessary for a preview shell unless evidence proves the simpler lane cannot be made reliable.
 
-Decision: implement Approach A now. Keep B/C out of scope unless diagnostics prove A cannot provide a reliable runtime.
+Decision: use Approach A. Escalate to B or C only if the measured runtime failure cannot be corrected safely in the existing wrapper.
 
 ## Architecture
 
@@ -67,18 +67,18 @@ Visual system:
 - Two brief lightning pulses with a restrained teal/gold afterglow.
 - `STORM AND ME` wordmark centered beneath the mark.
 - `HoldWise AI` product subtitle below the company wordmark.
-- Total normal duration approximately 1.2–1.6 seconds, but the overlay will remain until the web app reports a successful mount so a blank web view is never exposed.
+- Total normal duration approximately 1.2–1.6 seconds, but the overlay remains until the web app reports a successful mount so a blank web view is never exposed.
 - Respect Reduce Motion: use opacity-only transitions and skip pulse/scale motion.
 
 Brand standard for future Storm And Me apps:
 - Company mark always appears first.
 - Product name is secondary.
 - Intro is short, polished, and non-interactive.
-- The same cloud/bolt geometry and wordmark spacing should be reused; product-specific accent glow may vary.
+- Reuse the same cloud/bolt geometry and wordmark spacing; product-specific accent glow may vary.
 
-### 2. Explicit web boot handshake
+### 2. Explicit web boot handshake and diagnostics
 
-Add a `holdwiseBoot` script-message channel between React and native.
+Add a `holdwiseBoot` script-message channel between web content and native before changing the runtime-loading strategy.
 
 Web states:
 - `booting`: document loaded but React not yet confirmed.
@@ -89,61 +89,58 @@ Native behavior:
 - Show StormAndMe overlay immediately.
 - Load the bundled app.
 - Hide the overlay only after `ready`.
-- Log a stable marker such as `HOLDWISE_BOOT_READY` for CI/runtime inspection.
+- Log a stable marker `HOLDWISE_BOOT_READY` for CI/runtime inspection.
+- Log navigation failures and web-content process termination.
 - On timeout or `error`, replace the silent blank screen with a branded diagnostic panel containing a short user-safe message plus debug details in DEBUG builds.
-
-### 3. Harden native preview HTML
-
-During `prepare_web.sh`, create the preview copy of the web bundle and transform its first-paint dependencies:
-- Inline the generated primary CSS into `index.html`.
-- Inline the generated primary app JavaScript into `index.html` instead of relying on an external local module script for boot.
-- Preserve lazy chunks and the strategy worker files for on-demand use.
-- Remove the Base44 external favicon from the native copy.
-- Remove/relativize the root `/manifest.json` reference from the native copy because the preview does not need a PWA manifest.
-- Add a deterministic packaging verifier that fails CI if the native HTML still references the primary external `index-*.js` or `index-*.css` boot files.
-
-The normal web build remains unchanged; this transformation is native-preview packaging only.
-
-### 4. Guard file-scheme URL mutation
-
-In native/file mode, app parameter cleanup must not rewrite the current URL unless a removable query parameter is actually present. This prevents unnecessary `history.replaceState` work during `file://` startup while preserving current web behavior.
-
-### 5. Runtime failure visibility
 
 At document start, inject lightweight listeners for:
 - `window.error`
 - `unhandledrejection`
 
-Send sanitized error name/message to native through `holdwiseBoot`. No personal data, tokens, hand history, or account details are included.
+Send only sanitized error name/message to native. Do not include personal data, tokens, hand history, or account details.
 
-Navigation failures and web-content process termination are also logged natively.
+### 3. Evidence-driven runtime correction
+
+The first simulator run after diagnostics are added uses the current loading model unchanged. The captured failure determines the single correction:
+
+- If the primary external `index-*.js`/CSS local subresource load fails, transform only the native preview copy so the primary CSS and primary app JavaScript are inline in `index.html`.
+- If URL cleanup/history mutation fails, change native/file-mode app-parameter cleanup so it only rewrites the URL when a removable query parameter is actually present.
+- If Base44 initialization is the failing boundary, isolate guest preview boot from that initialization while preserving normal web behavior.
+- If none of those are the cause, use the captured error to make one targeted correction and rerun the same smoke test before continuing.
+
+No multi-fix bundle is applied before the failure is measured.
+
+If first-paint inlining is the proven correction, the native preview packaging also:
+- preserves lazy chunks and the strategy worker files for on-demand use;
+- removes the Base44 external favicon from the native copy;
+- removes the root `/manifest.json` reference from the native copy because the preview does not need a PWA manifest;
+- fails CI if the native HTML still references the primary external `index-*.js` or `index-*.css` boot files.
+
+The normal web build remains unchanged.
 
 ## CI verification
 
-The preview workflow will verify all layers:
+The preview workflow verifies all layers:
 
 1. Existing course-data SHA checks remain.
 2. Existing premium/gameplay tests remain.
 3. Existing exhaustive 2,598,960-hand gameplay audit remains.
-4. Native packaging checks verify:
-   - `www/index.html` exists.
-   - primary boot CSS is inline.
-   - primary boot JavaScript is inline.
-   - no root `/manifest.json` dependency remains.
-   - strategy worker asset still exists.
+4. Native packaging checks verify `www/index.html` and the strategy worker exist.
 5. iOS Simulator build remains unsigned and includes arm64.
-6. Add a simulator runtime smoke check when the GitHub macOS runner provides a compatible simulator runtime:
+6. Add an iOS Simulator runtime smoke check when the GitHub macOS runner provides a compatible simulator runtime:
    - boot simulator;
    - install app;
    - launch app;
-   - wait for `HOLDWISE_BOOT_READY`;
-   - fail the runtime verification if a compatible simulator was available but the ready marker never appears.
+   - capture the `holdwiseBoot` error/ready markers;
+   - on the diagnostic run, retain the evidence that identifies the current failure;
+   - after the targeted correction, require `HOLDWISE_BOOT_READY` before packaging succeeds.
+7. If first-paint inlining is the measured correction, add packaging checks proving the boot JS/CSS are inline and the root manifest dependency is absent.
 
-The final Appetize ZIP is uploaded only after verification passes.
+The final Appetize ZIP is uploaded only after the corrected runtime smoke check passes.
 
 ## Error handling
 
-- Missing bundle: keep the current native missing-bundle page, but brand it consistently.
+- Missing bundle: keep the current native missing-bundle page, branded consistently.
 - JavaScript startup error: branded diagnostic panel rather than blank screen.
 - Boot timeout: branded diagnostic panel with retry action.
 - Strategy worker unavailable: existing synchronous fallback remains; gameplay continues.
@@ -151,12 +148,12 @@ The final Appetize ZIP is uploaded only after verification passes.
 
 ## Testing
 
-Add focused tests before implementation:
-- Native packaging test: transformed HTML contains inline boot JS/CSS and no primary external boot references.
-- Web test: boot message helper emits `ready` only after mount and serializes errors safely.
-- URL cleanup test: no history mutation occurs for a clean file URL; normal web query cleanup still works.
-- Existing premium/gameplay tests must continue passing.
-- Simulator ready-marker smoke check validates the actual native/web integration, not only ZIP contents.
+Tests are added before the corresponding implementation change:
+- Boot-handshake test: `ready` is emitted only after mount and errors serialize safely.
+- Native runtime smoke test: current build reproduces/captures the failure before the correction and emits `HOLDWISE_BOOT_READY` after it.
+- If URL cleanup is implicated: a clean file URL causes no history mutation while normal web query cleanup still works.
+- If first-paint inlining is implicated: transformed HTML contains inline boot JS/CSS and no primary external boot references.
+- Existing premium/gameplay tests continue passing.
 
 ## Non-goals
 
@@ -172,5 +169,5 @@ Add focused tests before implementation:
 - No blank screen is exposed during boot.
 - The intro is clearly company-first (`STORM AND ME`) with `HoldWise AI` secondary.
 - A startup failure produces an actionable diagnostic screen instead of silence.
-- CI proves the packaged app contains and can boot the intended web runtime before publishing the ZIP.
+- CI proves the packaged app can boot the intended web runtime before publishing the ZIP.
 - Production `main` remains unchanged.
