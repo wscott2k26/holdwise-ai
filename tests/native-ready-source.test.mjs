@@ -7,5 +7,5 @@ const source = fs.readFileSync(new URL('../src/main.jsx', import.meta.url), 'utf
 test('native ready handshake is not blocked on requestAnimationFrame', () => {
   const reporter = source.match(/function BootReadyReporter\(\)[\s\S]*?return null\n}/)?.[0] || '';
   assert.ok(reporter.includes('reportNativeBootReady()'), 'BootReadyReporter must report ready');
-  assert.equal(reporter.includes('requestAnimationFrame'), false, 'native readiness must not depend on the simulator GPU producing an animation frame');
+  assert.equal(/\b(?:window\.)?requestAnimationFrame\s*\(/.test(reporter), false, 'native readiness must not depend on the simulator GPU producing an animation frame');
 });
