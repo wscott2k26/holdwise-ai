@@ -18,6 +18,19 @@ jobs:
       - name: Checkout preview lane
         uses: actions/checkout@v4
 
+      - name: Rehydrate exact final Academy data
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 --decode .appetize/full-data/lessons.b64 | gunzip > src/lib/lessons.js
+          cat .appetize/full-data/academy.part.* | base64 --decode | gunzip > src/lib/academy.js
+          LESSONS_SHA="$(shasum -a 256 src/lib/lessons.js | awk '{print $1}')"
+          ACADEMY_SHA="$(shasum -a 256 src/lib/academy.js | awk '{print $1}')"
+          echo "lessons_sha256=$LESSONS_SHA"
+          echo "academy_sha256=$ACADEMY_SHA"
+          test "$LESSONS_SHA" = "ada157e544ed0fa5c578367e21172cf1c925df1af048881a453c336739a5c532"
+          test "$ACADEMY_SHA" = "5dd515383d75bdd842a56f9cf2adfd8a6536a76ca3200b0b1fa560cfcddfd282"
+
       - name: Report build environment
         shell: bash
         run: |
@@ -28,6 +41,8 @@ jobs:
           npm --version
           test -f package.json
           test -d src
+          test -f src/lib/lessons.js
+          test -f src/lib/academy.js
           test -f native/ios/HoldWiseAI/project.yml
 
       - name: Install XcodeGen
@@ -41,11 +56,12 @@ jobs:
         shell: bash
         run: npm install --no-audit --no-fund
 
-      - name: Fresh premium and gameplay tests
+      - name: Fresh premium, gameplay, and content QA
         shell: bash
         run: |
           set -euo pipefail
           node --test tests/daily-engagement.test.mjs tests/haptics.test.mjs tests/mastery.test.mjs tests/premium-visual.test.mjs
+          npm run validate:content
           npm run lint
           npm run typecheck
           npm run build
