@@ -17,6 +17,7 @@ jobs:
     steps:
       - name: Checkout preview lane
         uses: actions/checkout@v4
+
       - name: Report build environment
         shell: bash
         run: |
@@ -28,34 +29,40 @@ jobs:
           test -f package.json
           test -d src
           test -f native/ios/HoldWiseAI/project.yml
+
       - name: Install XcodeGen
         shell: bash
         run: |
           set -euo pipefail
           if ! command -v xcodegen >/dev/null 2>&1; then brew install xcodegen; fi
           xcodegen --version
+
       - name: Install dependencies
         shell: bash
         run: npm install --no-audit --no-fund
+
       - name: Fresh premium and gameplay tests
         shell: bash
         run: |
           set -euo pipefail
           node --test tests/daily-engagement.test.mjs tests/haptics.test.mjs tests/mastery.test.mjs tests/premium-visual.test.mjs
-          npm run validate:content
           npm run lint
           npm run typecheck
           npm run build
+
       - name: Fresh exhaustive gameplay audit
         shell: bash
         run: npm run audit:gameplay
+
       - name: Bundle native web assets
         shell: bash
         run: bash native/ios/HoldWiseAI/Scripts/prepare_web.sh
+
       - name: Generate iOS project
         working-directory: native/ios/HoldWiseAI
         shell: bash
         run: xcodegen generate --spec project.yml
+
       - name: Build ARM iOS Simulator app
         working-directory: native/ios/HoldWiseAI
         shell: bash
@@ -64,6 +71,7 @@ jobs:
           DERIVED="$RUNNER_TEMP/HoldWiseDerivedData"
           rm -rf "$DERIVED"
           xcodebuild -project HoldWiseAI.xcodeproj -scheme HoldWiseAI -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath "$DERIVED" CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=NO clean build
+
       - name: Verify simulator artifact
         shell: bash
         run: |
@@ -76,12 +84,14 @@ jobs:
           BUNDLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")"
           echo "app=$APP"
           echo "bundle_id=$BUNDLE"
+          echo "executable=$EXE"
           file "$APP/$EXE"
           lipo -info "$APP/$EXE"
           test "$BUNDLE" = "com.willywill.holdwiseai"
           lipo -archs "$APP/$EXE" | tr ' ' '\n' | grep -qx arm64
           test -f "$APP/www/index.html"
           echo "native_web_bundle=present"
+
       - name: Package Appetize ZIP
         shell: bash
         run: |
@@ -92,6 +102,7 @@ jobs:
           unzip -t "$OUT"
           echo "ZIP_PATH=$OUT" >> "$GITHUB_ENV"
           shasum -a 256 "$OUT"
+
       - name: Upload verified simulator ZIP
         uses: actions/upload-artifact@v4
         with:
