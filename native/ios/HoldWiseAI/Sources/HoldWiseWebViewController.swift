@@ -5,7 +5,10 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
     private var webView: WKWebView!
     private var storeKitBridge: HoldWiseStoreKitBridge!
     private let refreshControl = UIRefreshControl()
+    private let bootView = StormAndMeBootView()
     private let hapticHandlerName = "holdwiseHaptics"
+    private let bootHandlerName = "holdwiseBoot"
+    private var bootTimeoutWorkItem: DispatchWorkItem?
 
     override func loadView() {
         let configuration = WKWebViewConfiguration()
@@ -13,6 +16,7 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
         configuration.mediaTypesRequiringUserActionForPlayback = []
         configuration.websiteDataStore = .default()
         configuration.userContentController.add(self, name: hapticHandlerName)
+        configuration.userContentController.add(self, name: bootHandlerName)
 
         let nativeScript = """
         window.HoldWiseNative = Object.freeze({
@@ -27,6 +31,7 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
         )
 
         webView = WKWebView(frame: .zero, configuration: configuration)
+        webView.translatesAutoresizingMaskIntoConstraints = false
         webView.navigationDelegate = self
         webView.uiDelegate = self
         webView.allowsBackForwardNavigationGestures = true
@@ -44,22 +49,63 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
 
         refreshControl.addTarget(self, action: #selector(refresh), for: .valueChanged)
         webView.scrollView.refreshControl = refreshControl
-
         storeKitBridge = HoldWiseStoreKitBridge(webView: webView)
-        view = webView
+
+        let rootView = UIView()
+        rootView.backgroundColor = webView.backgroundColor
+        rootView.addSubview(webView)
+        rootView.addSubview(bootView)
+        NSLayoutConstraint.activate([
+            webView.topAnchor.constraint(equalTo: rootView.topAnchor),
+            webView.leadingAnchor.constraint(equalTo: rootView.leadingAnchor),
+            webView.trailingAnchor.constraint(equalTo: rootView.trailingAnchor),
+            webView.bottomAnchor.constraint(equalTo: rootView.bottomAnchor),
+            bootView.topAnchor.constraint(equalTo: rootView.topAnchor),
+            bootView.leadingAnchor.constraint(equalTo: rootView.leadingAnchor),
+            bootView.trailingAnchor.constraint(equalTo: rootView.trailingAnchor),
+            bootView.bottomAnchor.constraint(equalTo: rootView.bottomAnchor),
+        ])
+        view = rootView
     }
 
     deinit {
+        bootTimeoutWorkItem?.cancel()
         webView?.configuration.userContentController.removeScriptMessageHandler(forName: hapticHandlerName)
+        webView?.configuration.userContentController.removeScriptMessageHandler(forName: bootHandlerName)
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        startBootExperience()
         loadBundledApp()
     }
 
     @objc private func refresh() {
-        webView.reload()
+        retryBoot()
+    }
+
+    private func startBootExperience() {
+        bootView.showLoading(productName: "HoldWise AI")
+        scheduleBootTimeout()
+    }
+
+    private func scheduleBootTimeout() {
+        bootTimeoutWorkItem?.cancel()
+        let item = DispatchWorkItem { [weak self] in
+            self?.showBootFailure(
+                message: "HoldWise AI took too long to start.",
+                details: "The app shell loaded, but the trainer did not report ready."
+            )
+        }
+        bootTimeoutWorkItem = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + 15, execute: item)
+    }
+
+    private func retryBoot() {
+        refreshControl.endRefreshing()
+        bootView.showLoading(productName: "HoldWise AI")
+        scheduleBootTimeout()
+        loadBundledApp()
     }
 
     private func loadBundledApp() {
@@ -72,13 +118,18 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
     }
 
     private func showMissingBundlePage() {
-        let html = """
-        <!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'>
-        <style>body{font-family:-apple-system;background:#07131f;color:#fff;padding:48px 24px}h1{color:#e4bf64}code{background:#132537;padding:2px 6px;border-radius:6px}</style>
-        <h1>HoldWise AI needs its web bundle</h1>
-        <p>Run <code>npm run ios:prepare</code> from the project root, then rebuild the iOS target.</p>
-        """
-        webView.loadHTMLString(html, baseURL: nil)
+        showBootFailure(
+            message: "HoldWise AI could not find its bundled game files.",
+            details: "www/index.html is missing from this build."
+        )
+    }
+
+    private func showBootFailure(message: String, details: String?) {
+        bootTimeoutWorkItem?.cancel()
+        refreshControl.endRefreshing()
+        bootView.showFailure(message: message, details: details) { [weak self] in
+            self?.retryBoot()
+        }
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
@@ -86,7 +137,15 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        refreshControl.endRefreshing()
+        showBootFailure(message: "HoldWise AI could not finish loading.", details: error.localizedDescription)
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        showBootFailure(message: "HoldWise AI could not start loading.", details: error.localizedDescription)
+    }
+
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        showBootFailure(message: "HoldWise AI's web process stopped unexpectedly.", details: "Tap Retry to restart the trainer.")
     }
 
     func webView(
@@ -117,6 +176,24 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
     }
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        if message.name == bootHandlerName {
+            guard let payload = message.body as? [String: Any], let type = payload["type"] as? String else { return }
+            switch type {
+            case "ready":
+                bootTimeoutWorkItem?.cancel()
+                print("HOLDWISE_BOOT_READY")
+                bootView.dismissReady()
+            case "error":
+                let name = payload["name"] as? String ?? "Error"
+                let detail = payload["message"] as? String ?? "Unknown startup error"
+                print("HOLDWISE_BOOT_ERROR \(name): \(detail)")
+                showBootFailure(message: "HoldWise AI hit a startup error.", details: "\(name): \(detail)")
+            default:
+                break
+            }
+            return
+        }
+
         guard message.name == hapticHandlerName, let type = message.body as? String else { return }
         switch type {
         case "success":
