@@ -110,42 +110,46 @@ jobs:
         run: |
           set -euo pipefail
           LOG="$RUNNER_TEMP/holdwise-runtime.log"
-          ULOG="$RUNNER_TEMP/holdwise-unified.log"
           SCREENSHOT="$RUNNER_TEMP/holdwise-runtime.png"
           : > "$LOG"
-          : > "$ULOG"
           UDID="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; data=json.load(sys.stdin); print(next((d["udid"] for group in data.get("devices",{}).values() for d in group if d.get("isAvailable") and d.get("name","").startswith("iPhone")), ""))')"
           if [[ -z "$UDID" ]]; then
             echo "runtime_smoke=skipped-no-compatible-simulator" | tee -a "$LOG"
             exit 0
           fi
-          echo "runtime_simulator=$UDID" | tee -a "$LOG"
-          xcrun simctl boot "$UDID" >> "$LOG" 2>&1 || true
+          echo "runtime_simulator=$UDID"
+          xcrun simctl boot "$UDID" >/dev/null 2>&1 || true
           BOOTED=0
           for attempt in $(seq 1 30); do
             STATE="$(xcrun simctl list devices -j | python3 -c 'import json,sys; target=sys.argv[1]; data=json.load(sys.stdin); print(next((d.get("state","") for group in data.get("devices",{}).values() for d in group if d.get("udid")==target), ""))' "$UDID")"
-            echo "runtime_state[$attempt]=$STATE" >> "$LOG"
             if [[ "$STATE" == "Booted" ]]; then BOOTED=1; break; fi
             sleep 2
           done
           if [[ "$BOOTED" != "1" ]]; then
-            echo "runtime_smoke=skipped-simulator-boot-timeout" | tee -a "$LOG"
+            echo "runtime_smoke=skipped-simulator-boot-timeout" > "$LOG"
             xcrun simctl shutdown "$UDID" || true
             exit 0
           fi
-          xcrun simctl install "$UDID" "$APP" >> "$LOG" 2>&1
-          set +e
-          xcrun simctl launch --terminate-running-process "$UDID" com.willywill.holdwiseai >> "$LOG" 2>&1
-          set -e
+          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl launch --terminate-running-process "$UDID" com.willywill.holdwiseai
           sleep 12
-          xcrun simctl io "$UDID" screenshot "$SCREENSHOT" >> "$LOG" 2>&1 || true
-          sleep 3
-          xcrun simctl spawn "$UDID" log show --style compact --last 2m --predicate 'eventMessage CONTAINS "HOLDWISE_"' > "$ULOG" 2>&1 || true
-          echo "===== HoldWise runtime console ====="
+          DATA_DIR="$(xcrun simctl get_app_container "$UDID" com.willywill.holdwiseai data)"
+          if [[ -f "$DATA_DIR/Documents/holdwise-runtime.log" ]]; then
+            cp "$DATA_DIR/Documents/holdwise-runtime.log" "$LOG"
+          else
+            echo "HOLDWISE_DIAGNOSTIC_FILE_MISSING:$DATA_DIR/Documents/holdwise-runtime.log" > "$LOG"
+          fi
+          xcrun simctl io "$UDID" screenshot "$SCREENSHOT" >/dev/null 2>&1 &
+          SCREEN_PID=$!
+          for attempt in $(seq 1 10); do
+            if ! kill -0 "$SCREEN_PID" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          kill "$SCREEN_PID" 2>/dev/null || true
+          wait "$SCREEN_PID" || true
+          echo "===== app-owned HoldWise runtime diagnostics ====="
           cat "$LOG" || true
-          echo "===== HoldWise unified markers ====="
-          grep 'HOLDWISE_' "$ULOG" || true
-          xcrun simctl terminate "$UDID" com.willywill.holdwiseai >> "$LOG" 2>&1 || true
+          xcrun simctl terminate "$UDID" com.willywill.holdwiseai || true
           xcrun simctl shutdown "$UDID" || true
 
       - name: Upload runtime diagnostics
@@ -155,7 +159,6 @@ jobs:
           name: HoldWise-runtime-diagnostics
           path: |
             ${{ runner.temp }}/holdwise-runtime.log
-            ${{ runner.temp }}/holdwise-unified.log
             ${{ runner.temp }}/holdwise-runtime.png
           if-no-files-found: ignore
           retention-days: 2
