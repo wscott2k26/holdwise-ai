@@ -83,14 +83,18 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
         webView.reload()
     }
 
+    private func runtimeLog(_ message: String) {
+        NSLog("%@", message)
+    }
+
     private func loadBundledApp() {
         guard let indexURL = Bundle.main.url(forResource: "index", withExtension: "html", subdirectory: "www") else {
-            print("HOLDWISE_NAV_ERROR:missing bundled www/index.html")
+            runtimeLog("HOLDWISE_NAV_ERROR:missing bundled www/index.html")
             showMissingBundlePage()
             return
         }
         let directoryURL = indexURL.deletingLastPathComponent()
-        print("HOLDWISE_LOAD_URL:\(indexURL.path)")
+        runtimeLog("HOLDWISE_LOAD_URL:\(indexURL.path)")
         webView.loadFileURL(indexURL, allowingReadAccessTo: directoryURL)
     }
 
@@ -104,23 +108,52 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
         webView.loadHTMLString(html, baseURL: nil)
     }
 
+    private func probeDOM(after delay: TimeInterval, label: String) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self else { return }
+            let script = """
+            JSON.stringify({
+              readyState: document.readyState,
+              href: String(window.location.href || ''),
+              rootExists: Boolean(document.getElementById('root')),
+              rootChildren: document.getElementById('root')?.childElementCount ?? -1,
+              rootHTMLLength: document.getElementById('root')?.innerHTML?.length ?? -1,
+              rootText: String(document.getElementById('root')?.innerText || '').slice(0, 160),
+              bodyText: String(document.body?.innerText || '').slice(0, 160),
+              scripts: Array.from(document.scripts || []).map(s => s.src || '[inline]').slice(0, 12),
+              stylesheets: Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(l => l.href).slice(0, 12)
+            })
+            """
+            self.webView.evaluateJavaScript(script) { [weak self] result, error in
+                guard let self else { return }
+                if let error {
+                    self.runtimeLog("HOLDWISE_DOM_STATE:\(label):probe-error:\(error.localizedDescription)")
+                    return
+                }
+                self.runtimeLog("HOLDWISE_DOM_STATE:\(label):\(String(describing: result ?? "nil"))")
+            }
+        }
+    }
+
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         refreshControl.endRefreshing()
-        print("HOLDWISE_NAV_FINISHED")
+        runtimeLog("HOLDWISE_NAV_FINISHED")
+        probeDOM(after: 0.5, label: "t+0.5")
+        probeDOM(after: 5.0, label: "t+5")
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         refreshControl.endRefreshing()
-        print("HOLDWISE_NAV_ERROR:\(error.localizedDescription)")
+        runtimeLog("HOLDWISE_NAV_ERROR:\(error.localizedDescription)")
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         refreshControl.endRefreshing()
-        print("HOLDWISE_NAV_ERROR:\(error.localizedDescription)")
+        runtimeLog("HOLDWISE_NAV_ERROR:\(error.localizedDescription)")
     }
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
-        print("HOLDWISE_WEB_ERROR:web content process terminated")
+        runtimeLog("HOLDWISE_WEB_ERROR:web content process terminated")
     }
 
     func webView(
@@ -158,7 +191,7 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
                 let detail = (payload["message"] as? String ?? "Unknown JavaScript startup error")
                     .replacingOccurrences(of: "\n", with: " ")
                     .prefix(500)
-                print("HOLDWISE_WEB_ERROR:\(detail)")
+                runtimeLog("HOLDWISE_WEB_ERROR:\(detail)")
             }
             return
         }
