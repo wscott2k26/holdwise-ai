@@ -7,6 +7,7 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
     private let refreshControl = UIRefreshControl()
     private let hapticHandlerName = "holdwiseHaptics"
     private let bootHandlerName = "holdwiseBoot"
+    private let runtimeLogName = "holdwise-runtime.log"
 
     override func loadView() {
         let configuration = WKWebViewConfiguration()
@@ -76,6 +77,7 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        resetRuntimeLog()
         loadBundledApp()
     }
 
@@ -83,8 +85,26 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
         webView.reload()
     }
 
+    private var runtimeLogURL: URL? {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(runtimeLogName)
+    }
+
+    private func resetRuntimeLog() {
+        guard let url = runtimeLogURL else { return }
+        try? "".write(to: url, atomically: true, encoding: .utf8)
+    }
+
     private func runtimeLog(_ message: String) {
         NSLog("%@", message)
+        guard let url = runtimeLogURL,
+              let data = "\(message)\n".data(using: .utf8) else { return }
+        if !FileManager.default.fileExists(atPath: url.path) {
+            FileManager.default.createFile(atPath: url.path, contents: nil)
+        }
+        guard let handle = try? FileHandle(forWritingTo: url) else { return }
+        handle.seekToEndOfFile()
+        handle.write(data)
+        try? handle.close()
     }
 
     private func loadBundledApp() {
