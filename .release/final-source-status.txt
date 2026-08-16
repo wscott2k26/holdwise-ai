@@ -1,9 +1,9 @@
 HoldWise Card Academy Final Source QA
-timestamp=2026-08-16T00:25:13Z
-head_before=07f240fadedc017397e27dc3c6ffb22f0ba341a8
-pure_21_game_qa=1
+timestamp=2026-08-16T01:12:30Z
+head_before=297a67ac3157a14722f71cac57b2862b1d659431
+pure_21_game_qa=0
 npm_install=0
 legacy_native_premium_qa=0
 exhaustive_gameplay_audit=0
-production_vite_build=1
-overall=FAIL
+production_vite_build=0
+overall=PASS
