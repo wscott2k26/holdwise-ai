@@ -20,7 +20,7 @@ jobs:
       - name: Card Academy focused tests
         run: |
           set -euo pipefail
-          node --test tests/native-ready-source.test.mjs tests/card-academy-catalog.test.mjs tests/tutorial-contract.test.mjs tests/card-academy-progress.test.mjs tests/card-academy-routing.test.mjs tests/card-academy-visual.test.mjs tests/poker-evaluator.test.mjs tests/texas-holdem-engine.test.mjs tests/texas-holdem-ui.test.mjs tests/video-poker-variants.test.mjs tests/video-poker-ui.test.mjs tests/video-poker-result-component.test.mjs tests/video-poker-no-dead-control.test.mjs tests/blackjack-engine.test.mjs tests/blackjack-ui.test.mjs tests/solitaire-engines.test.mjs tests/solitaire-ui.test.mjs tests/trick-taking-engines.test.mjs tests/trick-taking-ui.test.mjs
+          node --test tests/native-ready-source.test.mjs tests/card-academy-catalog.test.mjs tests/tutorial-contract.test.mjs tests/card-academy-progress.test.mjs tests/card-academy-routing.test.mjs tests/card-academy-visual.test.mjs tests/poker-evaluator.test.mjs tests/texas-holdem-engine.test.mjs tests/texas-holdem-ui.test.mjs tests/video-poker-variants.test.mjs tests/video-poker-ui.test.mjs tests/video-poker-result-component.test.mjs tests/video-poker-no-dead-control.test.mjs tests/blackjack-engine.test.mjs tests/blackjack-ui.test.mjs tests/solitaire-engines.test.mjs tests/solitaire-ui.test.mjs tests/trick-taking-engines.test.mjs tests/trick-taking-ui.test.mjs tests/gin-rummy-engine.test.mjs
       - run: npm install --no-audit --no-fund
       - name: Production web build
         run: npm run build
