@@ -17,7 +17,7 @@ env:
 
 jobs:
   final-ios:
-    runs-on: macos-15-arm64
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
         with:
