@@ -1,0 +1,276 @@
+name: HoldWise Card Academy Final iOS v4
+
+on:
+  push:
+    branches:
+      - card-academy-full-v1
+    paths:
+      - '.release/ios-v4-trigger.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  RELEASE_ZIP_NAME: HoldWise-AI-Card-Academy-Appetize-v2.0.0.zip
+
+jobs:
+  final-ios-v4:
+    runs-on: macos-15
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: card-academy-full-v1
+          fetch-depth: 0
+
+      - name: Require sealed green source QA
+        run: |
+          set -euo pipefail
+          grep -q '^overall=PASS$' .release/final-source-status.txt
+          grep -q '^pure_21_game_qa=0$' .release/final-source-status.txt
+          grep -q '^legacy_native_premium_qa=0$' .release/final-source-status.txt
+          grep -q '^exhaustive_gameplay_audit=0$' .release/final-source-status.txt
+          grep -q '^production_vite_build=0$' .release/final-source-status.txt
+          cat .release/final-source-status.txt
+
+      - name: Rehydrate sealed learning data
+        run: |
+          set -euo pipefail
+          base64 -D -i .appetize/full-data/lessons.b64 | gunzip > src/lib/lessons.js
+          cat .appetize/full-data/academy.part.* | base64 -D | gunzip > src/lib/academy.js
+          test "$(shasum -a 256 src/lib/lessons.js | awk '{print $1}')" = "ada157e544ed0fa5c578367e21172cf1c925df1af048881a453c336739a5c532"
+          test "$(shasum -a 256 src/lib/academy.js | awk '{print $1}')" = "5dd515383d75bdd842a56f9cf2adfd8a6536a76ca3200b0b1fa560cfcddfd282"
+
+      - name: Install build and browser toolchain
+        run: |
+          set -euo pipefail
+          if ! command -v xcodegen >/dev/null 2>&1; then brew install xcodegen; fi
+          npm install --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund playwright@latest
+          npx playwright install chromium --only-shell
+
+      - name: Reconfirm full-play Google-3 and exhaustive gameplay gates
+        run: |
+          set -euo pipefail
+          node --test \
+            tests/native-ready-source.test.mjs \
+            tests/stormandme-native-contract.test.mjs \
+            tests/engine-registry-complete.test.mjs \
+            tests/no-placeholder-routes.test.mjs \
+            tests/tutorial-live-engine.test.mjs \
+            tests/google3-all-games.test.mjs \
+            tests/texas-holdem-engine.test.mjs \
+            tests/video-poker-variants.test.mjs \
+            tests/blackjack-engine.test.mjs \
+            tests/solitaire-engines.test.mjs \
+            tests/trick-taking-engines.test.mjs \
+            tests/gin-rummy-engine.test.mjs \
+            tests/family-card-engines.test.mjs \
+            tests/speed-stall-terminal.test.mjs \
+            tests/solitaire-dom-contract.test.mjs \
+            tests/color-clash-bot-declaration.test.mjs \
+            tests/war-reveal-state.test.mjs \
+            tests/war-ui-reveal.test.mjs
+          npm run audit:gameplay
+
+      - name: Build production web
+        run: npm run build
+
+      - name: Playwright-open all 21 games and 21 tutorials plus visual screenshots
+        timeout-minutes: 8
+        run: |
+          set -euo pipefail
+          export NO_PROXY='127.0.0.1,localhost'
+          export no_proxy="$NO_PROXY"
+          npm run preview -- --host 127.0.0.1 --port 4173 --strictPort >"$RUNNER_TEMP/holdwise-preview.log" 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          READY=0
+          for _ in $(seq 1 40); do
+            if curl --noproxy '*' -fsS --connect-timeout 1 --max-time 2 http://127.0.0.1:4173/ >/dev/null; then READY=1; break; fi
+            if ! kill -0 "$SERVER_PID" >/dev/null 2>&1; then cat "$RUNNER_TEMP/holdwise-preview.log"; exit 1; fi
+            sleep 0.25
+          done
+          if [ "$READY" -ne 1 ]; then cat "$RUNNER_TEMP/holdwise-preview.log"; exit 1; fi
+          echo 'preview_server=READY'
+          mkdir -p "$RUNNER_TEMP/webshots"
+
+          cat > "$RUNNER_TEMP/card-academy-browser-check.mjs" <<'NODE'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { CARD_ACADEMY_GAMES } from './src/games/catalog.js';
+
+          const base = 'http://127.0.0.1:4173';
+          const out = process.env.RUNNER_TEMP;
+          const shotDir = path.join(out, 'webshots');
+          const browser = await chromium.launch({ headless: true });
+          const context = await browser.newContext({
+            viewport: { width: 393, height: 852 },
+            reducedMotion: 'no-preference',
+          });
+          const page = await context.newPage();
+          page.setDefaultTimeout(8000);
+          page.setDefaultNavigationTimeout(10000);
+          page.on('pageerror', error => console.error(`PAGEERROR ${page.url()} :: ${error.message}`));
+          page.on('console', msg => {
+            if (msg.type() === 'error') console.error(`CONSOLE ${page.url()} :: ${msg.text()}`);
+          });
+
+          async function openAndRequire(route, needles) {
+            const url = `${base}/#/${route}`;
+            await page.goto(url, { waitUntil: 'domcontentloaded' });
+            for (const needle of needles) {
+              await page.waitForFunction(text => document.body?.innerText?.includes(text), needle);
+            }
+            const body = await page.locator('body').innerText();
+            if (/Tutorial unavailable|Game unavailable|development placeholder/i.test(body)) {
+              throw new Error(`Placeholder/unavailable UI at ${route}`);
+            }
+          }
+
+          let gameCount = 0;
+          let tutorialCount = 0;
+          for (const game of CARD_ACADEMY_GAMES) {
+            console.log(`GAME ${gameCount + 1}/21 ${game.id}`);
+            await openAndRequire(`game/${game.id}`, [game.title]);
+            gameCount += 1;
+            console.log(`TUTORIAL ${tutorialCount + 1}/21 ${game.id}`);
+            await openAndRequire(`game/${game.id}/tutorial`, [game.title, 'Try a legal move']);
+            tutorialCount += 1;
+          }
+          if (gameCount !== 21 || tutorialCount !== 21) throw new Error(`Route counts ${gameCount}/${tutorialCount}`);
+
+          const representative = [
+            ['academy','academy'],
+            ['game/texas-holdem','texas-holdem'],
+            ['game/jacks-or-better','jacks-or-better'],
+            ['game/blackjack','blackjack'],
+            ['game/klondike','klondike'],
+            ['game/spades','spades'],
+            ['game/gin-rummy','gin-rummy'],
+            ['game/color-clash','color-clash'],
+          ];
+          for (const [route,name] of representative) {
+            console.log(`SCREENSHOT ${route}`);
+            await page.goto(`${base}/#/${route}`, { waitUntil: 'domcontentloaded' });
+            await page.waitForTimeout(700);
+            await page.screenshot({ path: path.join(shotDir, `${name}.png`), fullPage: true });
+            const size = fs.statSync(path.join(shotDir, `${name}.png`)).size;
+            if (size < 10000) throw new Error(`Screenshot too small ${name}: ${size}`);
+          }
+          fs.writeFileSync(path.join(shotDir, 'runtime-status.txt'), 'game_routes=21\ntutorial_routes=21\nrepresentative_webshots=8\n');
+          await context.close();
+          await browser.close();
+          console.log('PLAYWRIGHT_ROUTE_QUADCHECK=PASS');
+          NODE
+          node "$RUNNER_TEMP/card-academy-browser-check.mjs"
+
+      - name: Bundle hardened native web app
+        run: |
+          set -euo pipefail
+          bash native/ios/HoldWiseAI/Scripts/prepare_web.sh
+          node scripts/verify-native-web.mjs native/ios/HoldWiseAI/Resources/www
+
+      - name: Build universal iOS Simulator app
+        working-directory: native/ios/HoldWiseAI
+        timeout-minutes: 8
+        run: |
+          set -euo pipefail
+          xcodegen generate --spec project.yml
+          DERIVED="$RUNNER_TEMP/HoldWiseFinalDerived"
+          rm -rf "$DERIVED"
+          xcodebuild -project HoldWiseAI.xcodeproj -scheme HoldWiseAI -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath "$DERIVED" CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=NO clean build
+          APP="$(find "$DERIVED/Build/Products/Debug-iphonesimulator" -maxdepth 1 -name '*.app' -type d -print -quit)"
+          test -n "$APP"
+          echo "APP=$APP" >> "$GITHUB_ENV"
+          EXE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Info.plist")"
+          BUNDLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")"
+          ARCHS="$(lipo -archs "$APP/$EXE")"
+          test "$BUNDLE" = 'com.willywill.holdwiseai'
+          [[ " $ARCHS " == *' arm64 '* ]]
+          [[ " $ARCHS " == *' x86_64 '* ]]
+          test -f "$APP/www/index.html"
+          grep -q 'data-holdwise-native-inline' "$APP/www/index.html"
+          printf 'BUNDLE_ID=%s\nAPP_ARCHS=%s\n' "$BUNDLE" "$ARCHS" >> "$GITHUB_ENV"
+
+      - name: Real iPhone Simulator boot native marker and screenshots
+        timeout-minutes: 8
+        run: |
+          set -euo pipefail
+          DEVICE="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; data=json.load(sys.stdin); items=[d for ds in data.get("devices",{}).values() for d in ds if d.get("isAvailable") and "iPhone" in d.get("name","")]; preferred=[d for d in items if "16 Pro" in d.get("name","") or "17 Pro" in d.get("name","")]; pick=(preferred or items); print(pick[0]["udid"] if pick else "")')"
+          test -n "$DEVICE"
+          xcrun simctl boot "$DEVICE" >/dev/null 2>&1 || true
+          xcrun simctl bootstatus "$DEVICE" -b
+          xcrun simctl install "$DEVICE" "$APP"
+          DATA_CONTAINER="$(xcrun simctl get_app_container "$DEVICE" "$BUNDLE_ID" data)"
+          READY="$DATA_CONTAINER/Library/Caches/holdwise-boot-ready"
+          ERROR="$DATA_CONTAINER/Library/Caches/holdwise-boot-error.txt"
+          rm -f "$READY" "$ERROR"
+          mkdir -p "$RUNNER_TEMP/native-shots"
+          xcrun simctl terminate "$DEVICE" "$BUNDLE_ID" >/dev/null 2>&1 || true
+          xcrun simctl launch "$DEVICE" "$BUNDLE_ID"
+          sleep 0.20
+          xcrun simctl io "$DEVICE" screenshot "$RUNNER_TEMP/native-shots/stormandme-intro.png" >/dev/null
+          OK=0
+          for _ in $(seq 1 60); do
+            if [ -f "$READY" ]; then OK=1; break; fi
+            if [ -f "$ERROR" ]; then cat "$ERROR"; exit 1; fi
+            sleep 1
+          done
+          test "$OK" -eq 1
+          test "$(cat "$READY")" = 'ready'
+          sleep 1
+          xcrun simctl io "$DEVICE" screenshot "$RUNNER_TEMP/native-shots/card-academy-lobby.png" >/dev/null
+          test "$(stat -f%z "$RUNNER_TEMP/native-shots/card-academy-lobby.png")" -gt 20000
+          xcrun simctl spawn "$DEVICE" log show --last 120s --style compact --predicate 'process == "HoldWise AI" OR eventMessage CONTAINS "HOLDWISE_BOOT"' > "$RUNNER_TEMP/native-shots/runtime.log" 2>&1 || true
+          xcrun simctl shutdown "$DEVICE" >/dev/null 2>&1 || true
+
+      - name: Package and verify exact Appetize ZIP
+        run: |
+          set -euo pipefail
+          ZIP="$RUNNER_TEMP/$RELEASE_ZIP_NAME"
+          ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
+          unzip -t "$ZIP"
+          SHA="$(shasum -a 256 "$ZIP" | awk '{print $1}')"
+          SIZE="$(stat -f%z "$ZIP")"
+          echo "FINAL_ZIP=$ZIP" >> "$GITHUB_ENV"
+          echo "FINAL_SHA=$SHA" >> "$GITHUB_ENV"
+          echo "FINAL_SIZE=$SIZE" >> "$GITHUB_ENV"
+          cat > "$RUNNER_TEMP/release-manifest.txt" <<EOF
+          HoldWise Card Academy iOS v4
+          overall=PASS
+          source_qa=PASS
+          game_routes=21
+          tutorial_routes=21
+          google3_source_gate=PASS
+          exhaustive_poker_audit=PASS
+          playwright_route_quadcheck=PASS
+          native_ready_marker=PASS
+          native_intro_screenshot=PASS
+          native_lobby_screenshot=PASS
+          bundle_id=$BUNDLE_ID
+          architectures=$APP_ARCHS
+          zip_name=$RELEASE_ZIP_NAME
+          zip_sha256=$SHA
+          zip_bytes=$SIZE
+          EOF
+          cat "$RUNNER_TEMP/release-manifest.txt"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HoldWise-AI-Card-Academy-Appetize-v2.0.0-v4
+          path: ${{ env.FINAL_ZIP }}
+          if-no-files-found: error
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HoldWise-Card-Academy-Final-Quadcheck-v4
+          path: |
+            ${{ runner.temp }}/native-shots
+            ${{ runner.temp }}/webshots
+            ${{ runner.temp }}/release-manifest.txt
+          if-no-files-found: error
+          retention-days: 7
