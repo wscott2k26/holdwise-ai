@@ -1,0 +1,21 @@
+name: Family Card Tables TDD Gate
+
+on:
+  push:
+    branches:
+      - card-academy-full-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  family-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Family engine and UI contracts
+        run: node --test tests/family-card-engines.test.mjs tests/family-card-ui.test.mjs
