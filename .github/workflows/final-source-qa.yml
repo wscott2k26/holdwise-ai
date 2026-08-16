@@ -1,0 +1,128 @@
+name: HoldWise Final Source QA
+
+on:
+  push:
+    branches:
+      - card-academy-full-v1
+    paths:
+      - '.release/final-source-trigger.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: card-academy-full-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply final staged integration idempotently
+        run: node .integration/applyFinalGameplayPolish.mjs
+      - name: Rehydrate sealed learning data
+        run: |
+          set -euo pipefail
+          base64 -d .appetize/full-data/lessons.b64 | gunzip > src/lib/lessons.js
+          cat .appetize/full-data/academy.part.* | base64 -d | gunzip > src/lib/academy.js
+          test "$(sha256sum src/lib/lessons.js | awk '{print $1}')" = "ada157e544ed0fa5c578367e21172cf1c925df1af048881a453c336739a5c532"
+          test "$(sha256sum src/lib/academy.js | awk '{print $1}')" = "5dd515383d75bdd842a56f9cf2adfd8a6536a76ca3200b0b1fa560cfcddfd282"
+      - name: Run full QA and write receipt
+        id: qa
+        shell: bash
+        run: |
+          set +e
+          mkdir -p .release
+          : > .release/final-source-status.txt
+          echo "HoldWise Card Academy Final Source QA" >> .release/final-source-status.txt
+          echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> .release/final-source-status.txt
+          echo "head_before=$(git rev-parse HEAD)" >> .release/final-source-status.txt
+
+          node --test \
+            tests/native-ready-source.test.mjs \
+            tests/card-academy-catalog.test.mjs \
+            tests/tutorial-contract.test.mjs \
+            tests/card-academy-progress.test.mjs \
+            tests/card-academy-routing.test.mjs \
+            tests/card-academy-visual.test.mjs \
+            tests/poker-evaluator.test.mjs \
+            tests/texas-holdem-engine.test.mjs \
+            tests/texas-holdem-ui.test.mjs \
+            tests/video-poker-variants.test.mjs \
+            tests/video-poker-ui.test.mjs \
+            tests/video-poker-result-component.test.mjs \
+            tests/video-poker-no-dead-control.test.mjs \
+            tests/blackjack-engine.test.mjs \
+            tests/blackjack-ui.test.mjs \
+            tests/solitaire-engines.test.mjs \
+            tests/solitaire-ui.test.mjs \
+            tests/solitaire-dom-contract.test.mjs \
+            tests/trick-taking-engines.test.mjs \
+            tests/trick-taking-ui.test.mjs \
+            tests/gin-rummy-engine.test.mjs \
+            tests/gin-rummy-ui.test.mjs \
+            tests/family-card-engines.test.mjs \
+            tests/family-card-ui.test.mjs \
+            tests/speed-stall-terminal.test.mjs \
+            tests/color-clash-bot-declaration.test.mjs \
+            tests/war-reveal-state.test.mjs \
+            tests/war-ui-reveal.test.mjs \
+            tests/engine-registry-complete.test.mjs \
+            tests/no-placeholder-routes.test.mjs \
+            tests/tutorial-live-engine.test.mjs \
+            tests/google3-all-games.test.mjs
+          PURE=$?
+          echo "pure_21_game_qa=$PURE" >> .release/final-source-status.txt
+
+          npm install --no-audit --no-fund
+          INSTALL=$?
+          echo "npm_install=$INSTALL" >> .release/final-source-status.txt
+
+          if [ "$INSTALL" -eq 0 ]; then
+            node --test \
+              tests/native-boot.test.mjs \
+              tests/app-params-native.test.mjs \
+              tests/native-web-packaging.test.mjs \
+              tests/stormandme-native-contract.test.mjs \
+              tests/daily-engagement.test.mjs \
+              tests/haptics.test.mjs \
+              tests/mastery.test.mjs \
+              tests/premium-visual.test.mjs
+            LEGACY=$?
+            npm run audit:gameplay
+            AUDIT=$?
+            npm run build
+            BUILD=$?
+          else
+            LEGACY=99
+            AUDIT=99
+            BUILD=99
+          fi
+          echo "legacy_native_premium_qa=$LEGACY" >> .release/final-source-status.txt
+          echo "exhaustive_gameplay_audit=$AUDIT" >> .release/final-source-status.txt
+          echo "production_vite_build=$BUILD" >> .release/final-source-status.txt
+
+          if [ "$PURE" -eq 0 ] && [ "$INSTALL" -eq 0 ] && [ "$LEGACY" -eq 0 ] && [ "$AUDIT" -eq 0 ] && [ "$BUILD" -eq 0 ]; then
+            echo "overall=PASS" >> .release/final-source-status.txt
+            exit 0
+          fi
+          echo "overall=FAIL" >> .release/final-source-status.txt
+          exit 1
+        continue-on-error: true
+      - name: Persist final source and QA receipt
+        run: |
+          set -euo pipefail
+          git config user.name 'HoldWise Release Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add src/games/engineRegistry.js src/pages/GameRoom.jsx src/pages/GameTutorial.jsx src/games/engines/speed.js src/components/games/SolitaireTable.jsx src/games/engines/colorClash.js src/games/engines/war.js src/components/games/FamilyTable.jsx .release/final-source-status.txt
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore: freeze final Card Academy source and QA receipt [skip ci]'
+            git push origin HEAD:card-academy-full-v1
+          fi
+      - name: Enforce QA result
+        run: |
+          grep -q '^overall=PASS$' .release/final-source-status.txt
