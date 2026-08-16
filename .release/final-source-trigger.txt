@@ -1,2 +1,5 @@
 HoldWise final source QA trigger
-2026-08-15T19:07:00-04:00
+2026-08-15T21:11:00-04:00
+expected_parent=a79b4000e9c489225f71743e5c77f4d93c6b8bd5
+blocker_gate=PASS
+staging_parity=PASS
