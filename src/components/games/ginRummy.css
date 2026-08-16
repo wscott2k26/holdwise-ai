@@ -1,0 +1,16 @@
+.hw-gin-table {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(119, 79, 181, .18), transparent 24%),
+    radial-gradient(circle at 82% 18%, rgba(42, 164, 136, .2), transparent 25%),
+    linear-gradient(180deg, #082c31 0%, #075043 48%, #04342f 78%, #021d20 100%);
+  border: 1px solid rgba(239, 205, 126, .24);
+  box-shadow: inset 0 1px rgba(255,255,255,.055), inset 0 -42px 90px rgba(0,0,0,.36), 0 28px 72px rgba(0,0,0,.43);
+}
+.hw-gin-table::before { content:''; position:absolute; inset:11px; border:1px solid rgba(239,205,126,.1); border-radius:inherit; pointer-events:none; }
+.hw-gin-purple { background: linear-gradient(180deg, rgba(118,82,178,.22), rgba(64,43,112,.16)); border:1px solid rgba(172,138,224,.2); }
+.hw-gin-deadwood { background: linear-gradient(145deg, rgba(239,205,126,.96), rgba(176,118,45,.96)); color:#071713; box-shadow: inset 0 1px rgba(255,255,255,.5), 0 6px 16px rgba(0,0,0,.28); }
+.hw-gin-knock { background: linear-gradient(180deg,#a52d48,#68162b); color:white; box-shadow:inset 0 1px rgba(255,255,255,.12),0 10px 22px rgba(72,8,27,.28); }
+.hw-gin-gold { color:#efd084; }
+.hw-gin-stock { background: linear-gradient(145deg,#1a3f65,#0b2744); border:1px solid rgba(226,239,255,.16); box-shadow:inset 0 0 0 3px rgba(255,255,255,.03),0 7px 16px rgba(0,0,0,.28); }
