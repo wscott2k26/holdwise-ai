@@ -1,0 +1,35 @@
+name: Solitaire DOM Diagnostic
+
+on:
+  push:
+    branches:
+      - card-academy-full-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Print exact nested-button regex match
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          const source=fs.readFileSync('src/components/games/SolitaireTable.jsx','utf8');
+          const re=/<button[^>]*>[\s\S]{0,400}\{card\?<MiniCard/;
+          const match=source.match(re);
+          console.log('match_index=',match?.index ?? -1);
+          if(match){
+            const start=Math.max(0,match.index-220);
+            const end=Math.min(source.length,match.index+match[0].length+220);
+            console.log('---CONTEXT START---');
+            console.log(source.slice(start,end));
+            console.log('---CONTEXT END---');
+          }
+          NODE
