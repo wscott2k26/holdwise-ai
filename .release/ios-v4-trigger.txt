@@ -1,0 +1,3 @@
+HoldWise final iOS v4 trigger
+source_qa=PASS
+browser_gate=Playwright
