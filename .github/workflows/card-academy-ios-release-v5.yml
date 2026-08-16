@@ -141,7 +141,10 @@ jobs:
           xcrun simctl terminate "$DEVICE" "$BUNDLE_ID" >/dev/null 2>&1 || true
           xcrun simctl launch "$DEVICE" "$BUNDLE_ID"
           sleep 0.20
-          xcrun simctl io "$DEVICE" screenshot "$RUNNER_TEMP/native-shots/stormandme-intro.png" >/dev/null
+          INTRO="$RUNNER_TEMP/native-shots/stormandme-intro.png"
+          LOBBY="$RUNNER_TEMP/native-shots/card-academy-lobby.png"
+          xcrun simctl io "$DEVICE" screenshot "$INTRO" >/dev/null
+          test "$(stat -f%z "$INTRO")" -gt 20000
           OK=0
           for _ in $(seq 1 60); do
             if [ -f "$READY" ]; then OK=1; break; fi
@@ -150,9 +153,13 @@ jobs:
           done
           test "$OK" -eq 1
           test "$(cat "$READY")" = 'ready'
-          sleep 1
-          xcrun simctl io "$DEVICE" screenshot "$RUNNER_TEMP/native-shots/card-academy-lobby.png" >/dev/null
-          test "$(stat -f%z "$RUNNER_TEMP/native-shots/card-academy-lobby.png")" -gt 20000
+          sleep 2
+          xcrun simctl io "$DEVICE" screenshot "$LOBBY" >/dev/null
+          test "$(stat -f%z "$LOBBY")" -gt 20000
+          INTRO_SHA="$(shasum -a 256 "$INTRO" | awk '{print $1}')"
+          LOBBY_SHA="$(shasum -a 256 "$LOBBY" | awk '{print $1}')"
+          test "$INTRO_SHA" != "$LOBBY_SHA"
+          printf 'intro_sha=%s\nlobby_sha=%s\n' "$INTRO_SHA" "$LOBBY_SHA"
           xcrun simctl spawn "$DEVICE" log show --last 120s --style compact --predicate 'process == "HoldWise AI" OR eventMessage CONTAINS "HOLDWISE_BOOT"' > "$RUNNER_TEMP/native-shots/runtime.log" 2>&1 || true
           xcrun simctl shutdown "$DEVICE" >/dev/null 2>&1 || true
 
@@ -178,9 +185,11 @@ jobs:
           google3_source_gate=PASS
           exhaustive_poker_audit=PASS
           playwright_route_quadcheck=PASS
+          stormandme_minimum_intro_seconds=1.5
           native_ready_marker=PASS
           native_intro_screenshot=PASS
           native_lobby_screenshot=PASS
+          native_intro_lobby_distinct=PASS
           bundle_id=$BUNDLE_ID
           architectures=$APP_ARCHS
           zip_name=$RELEASE_ZIP_NAME
