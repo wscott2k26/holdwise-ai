@@ -10,8 +10,10 @@ test('tutorial interactive stages are backed by each game real engine, not text-
   assert.ok(tutorial.includes('Open full table'));
 });
 
-test('tutorial still completes mastery only after the ten-stage path',()=>{
+test('tutorial completes mastery through the canonical progress API after the ten-stage path',()=>{
   assert.match(tutorial,/steps\.length/);
-  assert.match(tutorial,/recordTutorialCompletion/);
+  assert.match(tutorial,/markTutorialComplete/);
+  assert.match(tutorial,/family\s*:\s*game\.family/);
   assert.match(tutorial,/reward/);
+  assert.doesNotMatch(tutorial,/recordTutorialCompletion/);
 });
