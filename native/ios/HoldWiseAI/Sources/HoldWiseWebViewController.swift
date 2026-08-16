@@ -10,7 +10,10 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
     private let bootHandlerName = "holdwiseBoot"
     private let readyMarkerName = "holdwise-boot-ready"
     private let errorMarkerName = "holdwise-boot-error.txt"
+    private let minimumIntroDuration: TimeInterval = 1.5
+    private var bootExperienceStartedAt: TimeInterval = 0
     private var bootTimeoutWorkItem: DispatchWorkItem?
+    private var bootDismissWorkItem: DispatchWorkItem?
 
     override func loadView() {
         let configuration = WKWebViewConfiguration()
@@ -72,6 +75,7 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
 
     deinit {
         bootTimeoutWorkItem?.cancel()
+        bootDismissWorkItem?.cancel()
         webView?.configuration.userContentController.removeScriptMessageHandler(forName: hapticHandlerName)
         webView?.configuration.userContentController.removeScriptMessageHandler(forName: bootHandlerName)
     }
@@ -109,9 +113,15 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
         try? message.write(to: url, atomically: true, encoding: .utf8)
     }
 
+    private func beginBrandedBoot() {
+        bootDismissWorkItem?.cancel()
+        bootExperienceStartedAt = ProcessInfo.processInfo.systemUptime
+        bootView.showLoading(productName: "HoldWise AI")
+    }
+
     private func startBootExperience() {
         clearBootMarkers()
-        bootView.showLoading(productName: "HoldWise AI")
+        beginBrandedBoot()
         scheduleBootTimeout()
     }
 
@@ -127,10 +137,21 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
         DispatchQueue.main.asyncAfter(deadline: .now() + 15, execute: item)
     }
 
+    private func dismissBootAfterMinimumDuration() {
+        bootDismissWorkItem?.cancel()
+        let elapsed = max(0, ProcessInfo.processInfo.systemUptime - bootExperienceStartedAt)
+        let remaining = max(0, minimumIntroDuration - elapsed)
+        let item = DispatchWorkItem { [weak self] in
+            self?.bootView.dismissReady()
+        }
+        bootDismissWorkItem = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + remaining, execute: item)
+    }
+
     private func retryBoot() {
         refreshControl.endRefreshing()
         clearBootMarkers()
-        bootView.showLoading(productName: "HoldWise AI")
+        beginBrandedBoot()
         scheduleBootTimeout()
         loadBundledApp()
     }
@@ -153,6 +174,7 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
 
     private func showBootFailure(message: String, details: String?) {
         bootTimeoutWorkItem?.cancel()
+        bootDismissWorkItem?.cancel()
         refreshControl.endRefreshing()
         let diagnostic = [message, details].compactMap { $0 }.joined(separator: "\n")
         writeBootErrorMarker(diagnostic)
@@ -212,7 +234,7 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
                 bootTimeoutWorkItem?.cancel()
                 writeBootReadyMarker()
                 print("HOLDWISE_BOOT_READY")
-                bootView.dismissReady()
+                dismissBootAfterMinimumDuration()
             case "error":
                 let name = payload["name"] as? String ?? "Error"
                 let detail = payload["message"] as? String ?? "Unknown startup error"
