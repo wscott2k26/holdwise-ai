@@ -1,0 +1,74 @@
+name: HoldWise Release Readiness
+
+on:
+  push:
+    branches:
+      - card-academy-full-v1
+    paths:
+      - '.release/qa-trigger.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Full 21-game pure rules and source QA
+        run: |
+          set -euo pipefail
+          node --test \
+            tests/native-ready-source.test.mjs \
+            tests/card-academy-catalog.test.mjs \
+            tests/tutorial-contract.test.mjs \
+            tests/card-academy-progress.test.mjs \
+            tests/card-academy-routing.test.mjs \
+            tests/card-academy-visual.test.mjs \
+            tests/poker-evaluator.test.mjs \
+            tests/texas-holdem-engine.test.mjs \
+            tests/texas-holdem-ui.test.mjs \
+            tests/video-poker-variants.test.mjs \
+            tests/video-poker-ui.test.mjs \
+            tests/video-poker-result-component.test.mjs \
+            tests/video-poker-no-dead-control.test.mjs \
+            tests/blackjack-engine.test.mjs \
+            tests/blackjack-ui.test.mjs \
+            tests/solitaire-engines.test.mjs \
+            tests/solitaire-ui.test.mjs \
+            tests/solitaire-dom-contract.test.mjs \
+            tests/trick-taking-engines.test.mjs \
+            tests/trick-taking-ui.test.mjs \
+            tests/gin-rummy-engine.test.mjs \
+            tests/gin-rummy-ui.test.mjs \
+            tests/family-card-engines.test.mjs \
+            tests/family-card-ui.test.mjs \
+            tests/speed-stall-terminal.test.mjs \
+            tests/color-clash-bot-declaration.test.mjs \
+            tests/war-reveal-state.test.mjs \
+            tests/war-ui-reveal.test.mjs \
+            tests/engine-registry-complete.test.mjs \
+            tests/no-placeholder-routes.test.mjs \
+            tests/tutorial-live-engine.test.mjs \
+            tests/google3-all-games.test.mjs
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Legacy premium and native regression QA
+        run: |
+          node --test \
+            tests/native-boot.test.mjs \
+            tests/app-params-native.test.mjs \
+            tests/native-web-packaging.test.mjs \
+            tests/stormandme-native-contract.test.mjs \
+            tests/daily-engagement.test.mjs \
+            tests/haptics.test.mjs \
+            tests/mastery.test.mjs \
+            tests/premium-visual.test.mjs
+      - name: Exhaustive gameplay audit
+        run: npm run audit:gameplay
+      - name: Production web build
+        run: npm run build
