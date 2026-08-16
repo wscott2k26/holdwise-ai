@@ -35,6 +35,28 @@ test('native controller exposes deterministic simulator ready and error marker f
   assert.match(source, /clearBootMarkers/);
 });
 
+test('native controller persists complete startup diagnostics and catches errors after ready', () => {
+  const source = fs.readFileSync(controllerPath, 'utf8');
+  const readyBranch = source.match(/case "ready":([\s\S]*?)(?=\n\s*case "error":)/)?.[1] || '';
+  const errorBranch = source.match(/case "error":([\s\S]*?)(?=\n\s*default:)/)?.[1] || '';
+  const failureHandler = source.match(/private func showBootFailure\([\s\S]*?(?=\n\s*func webView\()/)?.[0] || '';
+
+  assert.match(source, /payload\["source"\]/);
+  assert.match(source, /payload\["line"\]/);
+  assert.match(source, /payload\["column"\]/);
+  assert.match(source, /payload\["stack"\]/);
+  assert.match(source, /source:\s*\\\(source\)/);
+  assert.match(source, /line:\s*\\\(line\)/);
+  assert.match(source, /column:\s*\\\(column\)/);
+  assert.match(source, /stack:\s*\\\(stack\)/);
+  assert.match(source, /postReadyVerificationDuration\s*:\s*TimeInterval\s*=\s*5/);
+  assert.match(readyBranch, /beginPostReadyVerification\(\)/, 'ready must begin the late-error verification window');
+  assert.match(errorBranch, /if isVerifyingBootAfterReady/, 'error must inspect the post-ready verification state');
+  assert.match(errorBranch, /HOLDWISE_BOOT_LATE_ERROR/, 'error during verification must be marked as late');
+  assert.match(errorBranch, /showBootFailure\([\s\S]*?marker:\s*diagnostic/, 'error must surface failure with the complete marker');
+  assert.match(failureHandler, /isVerifyingBootAfterReady\s*=\s*false/, 'handling an error must invalidate ready verification');
+});
+
 test('Storm And Me intro remains visibly branded for at least 1.5 seconds before ready handoff', () => {
   const source = fs.readFileSync(controllerPath, 'utf8');
   assert.match(source, /minimumIntroDuration\s*:\s*TimeInterval\s*=\s*1\.5/);

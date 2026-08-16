@@ -15,6 +15,7 @@
     "test": "npm run test:core && npm run validate:content",
     "qa": "npm run test && npm run lint && npm run typecheck && npm run build",
     "build:native": "VITE_NATIVE_IOS=true vite build",
+    "native:inspect": "node scripts/inspect-native-entry.mjs",
     "ios:prepare": "bash native/ios/HoldWiseAI/Scripts/prepare_web.sh",
     "ios:project": "bash native/ios/HoldWiseAI/Scripts/bootstrap.sh",
     "ios:archive": "bash native/ios/HoldWiseAI/Scripts/archive.sh",

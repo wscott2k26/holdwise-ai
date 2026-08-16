@@ -11,14 +11,29 @@ function post(message) {
   }
 }
 
-function safeErrorParts(value, fallbackMessage = 'Unknown startup error') {
+function safeString(value, fallback = '') {
+  return typeof value === 'string' ? value : fallback;
+}
+
+function safeLocationNumber(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
+export function normalizeBootError(value, fallbackMessage = 'Unknown startup error', location = {}) {
   const name = typeof value?.name === 'string' && value.name ? value.name : 'Error';
   const message = typeof value?.message === 'string' && value.message
     ? value.message
     : typeof fallbackMessage === 'string' && fallbackMessage
       ? fallbackMessage
       : 'Unknown startup error';
-  return { name, message };
+  return {
+    name,
+    message,
+    source: safeString(location?.source),
+    line: safeLocationNumber(location?.line),
+    column: safeLocationNumber(location?.column),
+    stack: safeString(value?.stack),
+  };
 }
 
 export function reportNativeBootReady() {
@@ -31,12 +46,19 @@ export function installNativeBootErrorForwarding() {
   window.__holdwiseBootErrorsInstalled = true;
 
   window.addEventListener('error', (event) => {
-    const details = safeErrorParts(event?.error, event?.message);
+    const details = normalizeBootError(event?.error, event?.message, {
+      source: event?.filename,
+      line: event?.lineno,
+      column: event?.colno,
+    });
     post({ type: 'error', ...details });
   });
 
   window.addEventListener('unhandledrejection', (event) => {
-    const details = safeErrorParts(event?.reason, String(event?.reason ?? 'Unhandled promise rejection'));
+    const details = normalizeBootError(
+      event?.reason,
+      String(event?.reason ?? 'Unhandled promise rejection'),
+    );
     post({ type: 'error', ...details });
   });
 }

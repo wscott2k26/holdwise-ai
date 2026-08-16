@@ -11,9 +11,12 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
     private let readyMarkerName = "holdwise-boot-ready"
     private let errorMarkerName = "holdwise-boot-error.txt"
     private let minimumIntroDuration: TimeInterval = 1.5
+    private let postReadyVerificationDuration: TimeInterval = 5
     private var bootExperienceStartedAt: TimeInterval = 0
     private var bootTimeoutWorkItem: DispatchWorkItem?
     private var bootDismissWorkItem: DispatchWorkItem?
+    private var bootVerificationWorkItem: DispatchWorkItem?
+    private var isVerifyingBootAfterReady = false
 
     override func loadView() {
         let configuration = WKWebViewConfiguration()
@@ -76,6 +79,7 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
     deinit {
         bootTimeoutWorkItem?.cancel()
         bootDismissWorkItem?.cancel()
+        bootVerificationWorkItem?.cancel()
         webView?.configuration.userContentController.removeScriptMessageHandler(forName: hapticHandlerName)
         webView?.configuration.userContentController.removeScriptMessageHandler(forName: bootHandlerName)
     }
@@ -115,6 +119,8 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
 
     private func beginBrandedBoot() {
         bootDismissWorkItem?.cancel()
+        bootVerificationWorkItem?.cancel()
+        isVerifyingBootAfterReady = false
         bootExperienceStartedAt = ProcessInfo.processInfo.systemUptime
         bootView.showLoading(productName: "HoldWise AI")
     }
@@ -148,6 +154,16 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
         DispatchQueue.main.asyncAfter(deadline: .now() + remaining, execute: item)
     }
 
+    private func beginPostReadyVerification() {
+        bootVerificationWorkItem?.cancel()
+        isVerifyingBootAfterReady = true
+        let item = DispatchWorkItem { [weak self] in
+            self?.isVerifyingBootAfterReady = false
+        }
+        bootVerificationWorkItem = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + postReadyVerificationDuration, execute: item)
+    }
+
     private func retryBoot() {
         refreshControl.endRefreshing()
         clearBootMarkers()
@@ -172,11 +188,13 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
         )
     }
 
-    private func showBootFailure(message: String, details: String?) {
+    private func showBootFailure(message: String, details: String?, marker: String? = nil) {
         bootTimeoutWorkItem?.cancel()
         bootDismissWorkItem?.cancel()
+        bootVerificationWorkItem?.cancel()
+        isVerifyingBootAfterReady = false
         refreshControl.endRefreshing()
-        let diagnostic = [message, details].compactMap { $0 }.joined(separator: "\n")
+        let diagnostic = marker ?? [message, details].compactMap { $0 }.joined(separator: "\n")
         writeBootErrorMarker(diagnostic)
         bootView.showFailure(message: message, details: details) { [weak self] in
             self?.retryBoot()
@@ -234,14 +252,33 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
                 bootTimeoutWorkItem?.cancel()
                 writeBootReadyMarker()
                 print("HOLDWISE_BOOT_READY")
+                beginPostReadyVerification()
                 dismissBootAfterMinimumDuration()
             case "error":
                 let name = payload["name"] as? String ?? "Error"
                 let detail = payload["message"] as? String ?? "Unknown startup error"
-                let diagnostic = "\(name): \(detail)"
-                writeBootErrorMarker(diagnostic)
-                print("HOLDWISE_BOOT_ERROR \(diagnostic)")
-                showBootFailure(message: "HoldWise AI hit a startup error.", details: diagnostic)
+                let source = payload["source"] as? String ?? ""
+                let line = (payload["line"] as? NSNumber)?.stringValue ?? "0"
+                let column = (payload["column"] as? NSNumber)?.stringValue ?? "0"
+                let stack = payload["stack"] as? String ?? ""
+                let diagnostic = [
+                    "name: \(name)",
+                    "message: \(detail)",
+                    "source: \(source)",
+                    "line: \(line)",
+                    "column: \(column)",
+                    "stack: \(stack)",
+                ].joined(separator: "\n")
+                if isVerifyingBootAfterReady {
+                    print("HOLDWISE_BOOT_LATE_ERROR \(diagnostic)")
+                } else {
+                    print("HOLDWISE_BOOT_ERROR \(diagnostic)")
+                }
+                showBootFailure(
+                    message: "HoldWise AI hit a startup error.",
+                    details: "\(name): \(detail)",
+                    marker: diagnostic
+                )
             default:
                 break
             }
