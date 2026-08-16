@@ -39,7 +39,7 @@ test('a player cannot immediately discard the exact card just taken from discard
 
 test('knock-discard is exposed only when resulting deadwood is ten or less',()=>{
   let state=ginRummyEngine.createGame({seed:53,dealer:0});const actor=state.actor;
-  state.players[actor].hand=cards('3hearts','4hearts','5hearts','6hearts','9clubs','9diamonds','9spades','2clubs','2diamonds','Kspades');
+  state.players[actor].hand=cards('3hearts','4hearts','5hearts','6hearts','9clubs','9diamonds','9spades','2clubs','2diamonds','Aspades');
   state.players[actor].hand.push(cards('Qclubs')[0]);state.phase='discard';state.drawnFromDiscardId=null;
   const knocks=ginRummyEngine.legalActions(state,actor).filter(a=>a.type==='knock-discard');
   assert.ok(knocks.length>0);assert.ok(knocks.every(action=>action.deadwood<=10));
