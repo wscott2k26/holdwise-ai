@@ -1,0 +1,25 @@
+.hw-family-table {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 6%, rgba(70,117,192,.16), transparent 24%),
+    radial-gradient(circle at 82% 16%, rgba(33,151,127,.14), transparent 24%),
+    linear-gradient(180deg,#071722 0%,#082c31 46%,#05231f 78%,#021416 100%);
+  border:1px solid rgba(239,205,126,.2);
+  box-shadow:inset 0 1px rgba(255,255,255,.05),inset 0 -42px 90px rgba(0,0,0,.38),0 28px 72px rgba(0,0,0,.42);
+}
+.hw-family-center { background:radial-gradient(circle,rgba(13,71,67,.34),rgba(0,0,0,.05)); border:1px solid rgba(255,255,255,.05); }
+.hw-family-seat { background:linear-gradient(180deg,rgba(4,17,23,.9),rgba(2,10,14,.9)); border:1px solid rgba(255,255,255,.08); box-shadow:0 10px 24px rgba(0,0,0,.24); }
+.hw-family-card-back { background:linear-gradient(145deg,#183d62,#0a233d); border:1px solid rgba(224,238,255,.16); box-shadow:inset 0 0 0 3px rgba(255,255,255,.03),0 5px 12px rgba(0,0,0,.25); }
+.hw-family-gold { color:#efd082; }
+.hw-family-ruby { color:#f27b8c; }
+.hw-family-spectrum { background:linear-gradient(135deg,rgba(230,74,61,.12),rgba(68,143,222,.12),rgba(45,166,102,.12),rgba(123,83,190,.14)); }
+.hw-cc-card { width:70px; height:104px; border-radius:16px; padding:7px; position:relative; flex:none; border:2px solid rgba(255,255,255,.25); box-shadow:inset 0 1px rgba(255,255,255,.24),0 8px 18px rgba(0,0,0,.32); color:white; font-weight:900; text-shadow:0 1px 2px rgba(0,0,0,.34); }
+.hw-cc-card.ember { background:linear-gradient(145deg,#e95342,#a82830); }
+.hw-cc-card.tide { background:linear-gradient(145deg,#3f91dc,#2058a4); }
+.hw-cc-card.moss { background:linear-gradient(145deg,#3fae70,#20794d); }
+.hw-cc-card.violet { background:linear-gradient(145deg,#8a62ca,#5c3299); }
+.hw-cc-card.spectrum { background:conic-gradient(from 45deg,#e95342,#3f91dc,#3fae70,#8a62ca,#e95342); }
+.hw-cc-card.selected { transform:translateY(-10px); outline:3px solid #efd082; box-shadow:0 10px 24px rgba(0,0,0,.34),0 0 28px rgba(239,208,130,.18); }
+.hw-cc-color-ember{background:#cf453b}.hw-cc-color-tide{background:#347dca}.hw-cc-color-moss{background:#359960}.hw-cc-color-violet{background:#7751b7}
+.hw-speed-center { background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025)); border:1px solid rgba(255,255,255,.07); }
