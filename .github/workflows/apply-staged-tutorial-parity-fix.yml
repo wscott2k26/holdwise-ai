@@ -1,0 +1,49 @@
+name: Apply Staged Tutorial Parity Fix
+
+on:
+  push:
+    branches:
+      - card-academy-full-v1
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: card-academy-full-v1
+          fetch-depth: 0
+      - name: Sync canonical tutorial progress API into staged release copy
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+          path=Path('.integration/GameTutorial.jsx')
+          text=path.read_text()
+          old_import="import { recordTutorialCompletion } from '@/lib/cardAcademyProgress';"
+          new_import="import { markTutorialComplete } from '@/lib/cardAcademyProgress';"
+          old_call="      recordTutorialCompletion(gameId);"
+          new_call="      markTutorialComplete(gameId,{family:game.family});"
+          old_deps="  }, [step?.kind,completed,gameId]);"
+          new_deps="  }, [step?.kind,completed,gameId,game?.family]);"
+          if text.count(old_import)!=1 or text.count(old_call)!=1 or text.count(old_deps)!=1:
+              raise SystemExit('Staged tutorial blocker strings did not match expected single occurrences.')
+          text=text.replace(old_import,new_import,1).replace(old_call,new_call,1).replace(old_deps,new_deps,1)
+          path.write_text(text)
+          PY
+          git diff --check
+          git diff -- .integration/GameTutorial.jsx
+      - name: Commit staged parity fix
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .integration/GameTutorial.jsx
+          git diff --cached --quiet && exit 0
+          git commit -m 'fix: keep staged tutorial aligned with progress API'
+          git push origin HEAD:card-academy-full-v1
