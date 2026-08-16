@@ -64,8 +64,8 @@ jobs:
           test -n "$CHROME"
           mkdir -p "$RUNNER_TEMP/webshots" "$RUNNER_TEMP/dom"
           node --input-type=module - <<'NODE' > "$RUNNER_TEMP/catalog.tsv"
-          import { CARD_GAMES } from './src/games/catalog.js';
-          for (const game of CARD_GAMES) console.log(`${game.id}\t${game.title}`);
+          import { CARD_ACADEMY_GAMES } from './src/games/catalog.js';
+          for (const game of CARD_ACADEMY_GAMES) console.log(`${game.id}\t${game.title}`);
           NODE
           COUNT=0
           while IFS=$'\t' read -r ID TITLE; do
