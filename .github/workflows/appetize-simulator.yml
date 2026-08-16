@@ -5,6 +5,7 @@ on:
     branches:
       - appetize-preview
       - appetize-runtime-fix-v2
+      - feature/holdwise-light-premium-v6
   workflow_dispatch:
 
 permissions:
