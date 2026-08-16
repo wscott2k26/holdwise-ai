@@ -15,17 +15,17 @@ function settleIfNeeded(state){
 }
 function drawCard(player){return player.deck.shift()||null;}
 function award(state,winner){state.players[winner].deck.push(...state.pot);state.pot=[];}
-function resolveBattle(state,depth=0){
+function resolveBattle(state,depth=0,reveals=[]){
   const first=drawCard(state.players[0]),second=drawCard(state.players[1]);
-  if(!first||!second){if(first)state.pot.push(first);if(second)state.pot.push(second);if(first&&!second)award(state,0);if(second&&!first)award(state,1);return{winner:first?0:second?1:null,warDepth:depth};}
-  state.pot.push(first,second);
-  if(first.value>second.value){award(state,0);return{winner:0,warDepth:depth};}
-  if(second.value>first.value){award(state,1);return{winner:1,warDepth:depth};}
+  if(!first||!second){if(first)state.pot.push(first);if(second)state.pot.push(second);if(first&&!second)award(state,0);if(second&&!first)award(state,1);return{winner:first?0:second?1:null,warDepth:depth,reveals};}
+  state.pot.push(first,second);reveals.push({you:first,opponent:second,depth});
+  if(first.value>second.value){award(state,0);return{winner:0,warDepth:depth,reveals};}
+  if(second.value>first.value){award(state,1);return{winner:1,warDepth:depth,reveals};}
   const canWar0=state.players[0].deck.length>0,canWar1=state.players[1].deck.length>0;
-  if(!canWar0||!canWar1){if(canWar0&&!canWar1)award(state,0);else if(canWar1&&!canWar0)award(state,1);return{winner:canWar0?0:canWar1?1:null,warDepth:depth+1};}
+  if(!canWar0||!canWar1){if(canWar0&&!canWar1)award(state,0);else if(canWar1&&!canWar0)award(state,1);return{winner:canWar0?0:canWar1?1:null,warDepth:depth+1,reveals};}
   const downCount=Math.min(3,Math.max(0,state.players[0].deck.length-1),Math.max(0,state.players[1].deck.length-1));
   for(let i=0;i<downCount;i+=1){const a=drawCard(state.players[0]),b=drawCard(state.players[1]);if(a)state.pot.push(a);if(b)state.pot.push(b);}
-  const result=resolveBattle(state,depth+1);return{...result,warDepth:Math.max(result.warDepth,depth+1)};
+  const result=resolveBattle(state,depth+1,reveals);return{...result,warDepth:Math.max(result.warDepth,depth+1),reveals};
 }
 function legalActions(state){return terminal(state)?[{type:'new-game'}]:[{type:'battle'}];}
 function applyAction(input,action){

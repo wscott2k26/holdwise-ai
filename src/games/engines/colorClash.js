@@ -50,7 +50,17 @@ function applyAction(input,action){
   }
   throw new Error(`Unknown Color Clash action: ${type}`);
 }
-export function chooseColorClashBotAction(state,actor=state.actor){const legal=legalActions(state,actor);if(!legal.length)throw new Error('Color Clash bot has no legal action');const plays=legal.filter(a=>a.type==='play');if(plays.length){const hand=state.players[actor].hand;const colorCounts=Object.fromEntries(COLOR_CLASH_COLORS.map(color=>[color,hand.filter(card=>card.color===color).length]));return plays.slice().sort((a,b)=>{const ca=hand.find(c=>c.id===a.cardId),cb=hand.find(c=>c.id===b.cardId);return Number(cb?.points||0)-Number(ca?.points||0)+(b.chosenColor?colorCounts[b.chosenColor]:0)-(a.chosenColor?colorCounts[a.chosenColor]:0);})[0];}return legal.find(a=>a.type==='draw')||legal[0];}
+export function chooseColorClashBotAction(state,actor=state.actor){
+  const legal=legalActions(state,actor);if(!legal.length)throw new Error('Color Clash bot has no legal action');
+  const plays=legal.filter(action=>action.type==='play');
+  if(plays.length){
+    const hand=state.players[actor].hand;
+    const colorCounts=Object.fromEntries(COLOR_CLASH_COLORS.map(color=>[color,hand.filter(card=>card.color===color).length]));
+    const chosen=plays.slice().sort((a,b)=>{const ca=hand.find(card=>card.id===a.cardId),cb=hand.find(card=>card.id===b.cardId);return Number(cb?.points||0)-Number(ca?.points||0)+(b.chosenColor?colorCounts[b.chosenColor]:0)-(a.chosenColor?colorCounts[a.chosenColor]:0);})[0];
+    return hand.length===2?{...chosen,declareLastSpark:true}:chosen;
+  }
+  return legal.find(action=>action.type==='draw')||legal[0];
+}
 export function startNextColorClashRound(input){if(!input.roundComplete)throw new Error('Color Clash round not complete');if(input.matchComplete)throw new Error('Color Clash match complete');const base=clone(input),roundNumber=base.roundNumber+1,startingSeat=(roundNumber-1)%4;return buildRound({...base,players:undefined,stock:undefined,discard:undefined},{roundNumber,startingSeat});}
 function result(state){return state.roundResult||null;}
 function coachFacts(state,actor=state.humanSeat){return[`Score: ${state.scores[actor]} · target ${state.targetScore}.`,`Current color: ${state.currentColor}. Cards in hand: ${state.players[actor].hand.length}.`,`Match color or symbol. Color Shift and Prism Four are wild. Call Last Spark when your play leaves one card or draw a two-card penalty.`];}
