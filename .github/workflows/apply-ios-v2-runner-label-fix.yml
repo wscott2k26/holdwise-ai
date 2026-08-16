@@ -1,0 +1,44 @@
+name: Apply iOS v2 Runner Label Fix
+
+on:
+  push:
+    branches:
+      - card-academy-full-v1
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: card-academy-full-v1
+          fetch-depth: 0
+      - name: Use supported GitHub Apple Silicon runner label
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+          path=Path('.github/workflows/card-academy-ios-release-v2.yml')
+          text=path.read_text()
+          old='    runs-on: macos-15-arm64'
+          new='    runs-on: macos-15'
+          if text.count(old) != 1:
+              raise SystemExit(f'Expected one unsupported runner label, found {text.count(old)}')
+          path.write_text(text.replace(old,new,1))
+          PY
+          git diff --check
+          grep -n 'runs-on:' .github/workflows/card-academy-ios-release-v2.yml
+      - name: Commit runner label fix
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/card-academy-ios-release-v2.yml
+          git diff --cached --quiet && exit 0
+          git commit -m 'fix: use supported macos-15 Apple Silicon runner'
+          git push origin HEAD:card-academy-full-v1
