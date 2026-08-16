@@ -1,0 +1,25 @@
+name: Storm And Me Intro Timing Gate
+
+on:
+  push:
+    branches:
+      - card-academy-full-v1
+    paths:
+      - 'tests/stormandme-native-contract.test.mjs'
+      - 'native/ios/HoldWiseAI/Sources/HoldWiseWebViewController.swift'
+      - '.release/stormandme-intro-trigger.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Storm And Me native contract tests
+        run: node --test tests/stormandme-native-contract.test.mjs
