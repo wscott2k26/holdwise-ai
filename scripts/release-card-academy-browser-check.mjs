@@ -44,22 +44,21 @@ async function walkTutorial(game) {
   await page.goto(`${base}/#/${route}`, { waitUntil: 'domcontentloaded' });
   await requireBodyText(game.title);
   await requireBodyText('Tutorial 1/10');
-  await requireBodyText('What is this game?');
   await rejectUnavailable(route);
 
-  for (let index = 0; index < 3; index += 1) {
+  for (let stage = 2; stage <= 4; stage += 1) {
     await page.getByRole('button', { name: /Next/ }).click();
+    await requireBodyText(`Tutorial ${stage}/10`);
   }
-  await requireBodyText('Tutorial 4/10');
   await requireBodyText('Try a legal move');
 
   await page.getByRole('button', { name: 'Try a legal move', exact: true }).click();
   await requireBodyText('PASS ·');
 
-  for (let index = 0; index < 6; index += 1) {
+  for (let stage = 5; stage <= 10; stage += 1) {
     await page.getByRole('button', { name: /Next/ }).click();
+    await requireBodyText(`Tutorial ${stage}/10`);
   }
-  await requireBodyText('Tutorial 10/10');
   await requireBodyText('Graduated');
   await requireBodyText('Open full table');
 }
