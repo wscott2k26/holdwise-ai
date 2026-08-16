@@ -22,7 +22,14 @@ page.on('console', msg => {
 });
 
 async function requireBodyText(text) {
-  await page.waitForFunction(needle => document.body?.innerText?.includes(needle), text);
+  try {
+    await page.waitForFunction(needle => document.body?.innerText?.includes(needle), text);
+  } catch (error) {
+    const body = await page.locator('body').innerText().catch(()=>'<<BODY UNAVAILABLE>>');
+    console.error(`ASSERTION_MISS expected=${JSON.stringify(text)} url=${page.url()}`);
+    console.error(`BODY_SNAPSHOT\n${body.slice(0,4000)}\nEND_BODY_SNAPSHOT`);
+    throw error;
+  }
 }
 
 async function rejectUnavailable(route) {
