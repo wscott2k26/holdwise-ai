@@ -2,3 +2,4 @@ HoldWise final iOS v5 trigger
 source_qa=PASS
 tutorial_runtime=walk-all-10-stages
 assertion=behavioral-stage-progression
+diagnostic=rendered-body-on-miss
