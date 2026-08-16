@@ -1,0 +1,3 @@
+HoldWise final iOS v3 trigger
+source_qa=PASS
+reason=harden browser smoke with per-route timeouts
