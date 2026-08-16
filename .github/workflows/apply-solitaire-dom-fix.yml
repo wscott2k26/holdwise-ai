@@ -1,0 +1,44 @@
+name: Apply Solitaire DOM Fix
+
+on:
+  push:
+    branches:
+      - card-academy-full-v1
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: card-academy-full-v1
+          fetch-depth: 0
+      - name: Remove nested FreeCell button
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+          path=Path('src/components/games/SolitaireTable.jsx')
+          text=path.read_text()
+          old="""{state.freeCells.map((card,index)=><button key={index} type=\"button\" onClick={()=>tapCell(index)} className={`hw-solitaire-slot h-[62px] w-11 rounded-lg ${selection?.zone==='cell'&&selection.cell===index?'hw-solitaire-action-glow':''}`}>{card?<MiniCard card={card}/>:<span className=\"text-[9px] text-white/18\">FREE</span>}</button>)}"""
+          new="""{state.freeCells.map((card,index)=>card?<div key={index} className={`flex h-[62px] w-11 items-center justify-center rounded-lg ${selection?.zone==='cell'&&selection.cell===index?'hw-solitaire-action-glow':''}`}><MiniCard card={card} onClick={()=>tapCell(index)}/></div>:<button key={index} type=\"button\" onClick={()=>tapCell(index)} className=\"hw-solitaire-slot h-[62px] w-11 rounded-lg\"><span className=\"text-[9px] text-white/18\">FREE</span></button>)}"""
+          if text.count(old) != 1:
+              raise SystemExit(f'Expected one FreeCell nested-button pattern, found {text.count(old)}')
+          path.write_text(text.replace(old,new,1))
+          PY
+          git diff --check
+          git diff -- src/components/games/SolitaireTable.jsx
+      - name: Commit FreeCell DOM fix
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/components/games/SolitaireTable.jsx
+          git diff --cached --quiet && exit 0
+          git commit -m 'fix: remove nested FreeCell card button'
+          git push origin HEAD:card-academy-full-v1
