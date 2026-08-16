@@ -1,5 +1,6 @@
 HoldWise final iOS v2 trigger
 source_qa_commit=c2d13659b55bb08fea53b2d18bcace622ecd3ef6
 source_qa=PASS
-workflow_fix_commit=2a857aa1929c2bc12f08c49298c13da7dea02341
-build=NOW
+workflow_fix_commit=193ae3549d44d1e14541e126b9bb449f8e2f7624
+runner=macos-15
+build=NOW-2
