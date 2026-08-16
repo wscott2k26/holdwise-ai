@@ -1,0 +1,39 @@
+name: Apply Card Academy Integration
+
+on:
+  push:
+    branches:
+      - card-academy-full-v1
+    paths:
+      - '.integration/**'
+      - '.github/workflows/apply-card-academy-integration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: card-academy-full-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply staged integration files
+        run: node .integration/applyIntegration.mjs
+      - name: Commit integration only when source changed
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo 'Integration already current.'
+            exit 0
+          fi
+          git config user.name 'HoldWise Build Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add src/games/engineRegistry.js src/pages/GameRoom.jsx src/pages/GameTutorial.jsx src/games/engines/speed.js
+          git commit -m 'feat: integrate all 21 full game routes and live tutorials'
+          git push origin HEAD:card-academy-full-v1
