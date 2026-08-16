@@ -24,7 +24,8 @@ jobs:
             tests/engine-registry-complete.test.mjs \
             tests/gin-rummy-engine.test.mjs \
             tests/tutorial-live-engine.test.mjs \
-            tests/solitaire-dom-contract.test.mjs
+            tests/solitaire-dom-contract.test.mjs \
+            tests/release-staging-parity.test.mjs
       - name: Install dependencies
         if: always()
         run: npm install --no-audit --no-fund
