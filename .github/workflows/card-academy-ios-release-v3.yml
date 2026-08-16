@@ -79,11 +79,19 @@ jobs:
         timeout-minutes: 7
         run: |
           set -euo pipefail
-          python3 -m http.server 4173 -d dist >"$RUNNER_TEMP/holdwise-http.log" 2>&1 &
+          export NO_PROXY='127.0.0.1,localhost'
+          export no_proxy="$NO_PROXY"
+          npm run preview -- --host 127.0.0.1 --port 4173 --strictPort >"$RUNNER_TEMP/holdwise-preview.log" 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
-          sleep 2
-          curl -fsS http://127.0.0.1:4173/ >/dev/null
+          READY=0
+          for _ in $(seq 1 40); do
+            if curl --noproxy '*' -fsS --connect-timeout 1 --max-time 2 http://127.0.0.1:4173/ >/dev/null; then READY=1; break; fi
+            if ! kill -0 "$SERVER_PID" >/dev/null 2>&1; then cat "$RUNNER_TEMP/holdwise-preview.log"; exit 1; fi
+            sleep 0.25
+          done
+          if [ "$READY" -ne 1 ]; then cat "$RUNNER_TEMP/holdwise-preview.log"; exit 1; fi
+          echo 'preview_server=READY'
 
           CHROME=''
           for candidate in \
@@ -125,13 +133,13 @@ jobs:
           while IFS=$'\t' read -r ID TITLE; do
             echo "SMOKE game $((COUNT+1))/21: $ID"
             PROFILE="$RUNNER_TEMP/game-$COUNT-profile"
-            run_browser "$CHROME" --headless=new --disable-gpu --disable-background-networking --disable-component-update --disable-sync --disable-extensions --metrics-recording-only --mute-audio --no-first-run --no-default-browser-check --no-sandbox --user-data-dir="$PROFILE" --dump-dom "http://127.0.0.1:4173/#/game/$ID" > "$RUNNER_TEMP/dom/game-$ID.html"
+            run_browser "$CHROME" --headless=new --disable-gpu --no-proxy-server --disable-background-networking --disable-component-update --disable-sync --disable-extensions --metrics-recording-only --mute-audio --no-first-run --no-default-browser-check --no-sandbox --user-data-dir="$PROFILE" --dump-dom "http://127.0.0.1:4173/#/game/$ID" > "$RUNNER_TEMP/dom/game-$ID.html"
             grep -Fq "$TITLE" "$RUNNER_TEMP/dom/game-$ID.html"
             rm -rf "$PROFILE"
 
             echo "SMOKE tutorial $((COUNT+1))/21: $ID"
             PROFILE="$RUNNER_TEMP/tutorial-$COUNT-profile"
-            run_browser "$CHROME" --headless=new --disable-gpu --disable-background-networking --disable-component-update --disable-sync --disable-extensions --metrics-recording-only --mute-audio --no-first-run --no-default-browser-check --no-sandbox --user-data-dir="$PROFILE" --dump-dom "http://127.0.0.1:4173/#/game/$ID/tutorial" > "$RUNNER_TEMP/dom/tutorial-$ID.html"
+            run_browser "$CHROME" --headless=new --disable-gpu --no-proxy-server --disable-background-networking --disable-component-update --disable-sync --disable-extensions --metrics-recording-only --mute-audio --no-first-run --no-default-browser-check --no-sandbox --user-data-dir="$PROFILE" --dump-dom "http://127.0.0.1:4173/#/game/$ID/tutorial" > "$RUNNER_TEMP/dom/tutorial-$ID.html"
             grep -Fq "$TITLE" "$RUNNER_TEMP/dom/tutorial-$ID.html"
             grep -Fq 'Try a legal move' "$RUNNER_TEMP/dom/tutorial-$ID.html"
             rm -rf "$PROFILE"
@@ -143,7 +151,7 @@ jobs:
             SAFE="$(echo "$ROUTE" | tr '/' '-')"
             echo "SCREENSHOT $ROUTE"
             PROFILE="$RUNNER_TEMP/shot-$SAFE"
-            run_browser "$CHROME" --headless=new --disable-gpu --hide-scrollbars --disable-background-networking --disable-component-update --disable-sync --disable-extensions --metrics-recording-only --mute-audio --no-first-run --no-default-browser-check --no-sandbox --user-data-dir="$PROFILE" --window-size=393,852 --force-device-scale-factor=1 --screenshot="$RUNNER_TEMP/webshots/$SAFE.png" "http://127.0.0.1:4173/#/$ROUTE" >/dev/null
+            run_browser "$CHROME" --headless=new --disable-gpu --hide-scrollbars --no-proxy-server --disable-background-networking --disable-component-update --disable-sync --disable-extensions --metrics-recording-only --mute-audio --no-first-run --no-default-browser-check --no-sandbox --user-data-dir="$PROFILE" --window-size=393,852 --force-device-scale-factor=1 --screenshot="$RUNNER_TEMP/webshots/$SAFE.png" "http://127.0.0.1:4173/#/$ROUTE" >/dev/null
             test "$(stat -f%z "$RUNNER_TEMP/webshots/$SAFE.png")" -gt 10000
             rm -rf "$PROFILE"
           done
