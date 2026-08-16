@@ -1,0 +1,29 @@
+name: Card Academy Integration TDD Gate
+
+on:
+  push:
+    branches:
+      - card-academy-full-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Full-engine routing and tutorial contracts
+        run: |
+          node --test \
+            tests/family-card-engines.test.mjs \
+            tests/gin-rummy-engine.test.mjs \
+            tests/gin-rummy-ui.test.mjs \
+            tests/family-card-ui.test.mjs \
+            tests/engine-registry-complete.test.mjs \
+            tests/no-placeholder-routes.test.mjs \
+            tests/tutorial-live-engine.test.mjs
