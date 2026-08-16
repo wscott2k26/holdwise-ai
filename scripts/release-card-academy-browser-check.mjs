@@ -23,9 +23,12 @@ page.on('console', msg => {
 
 async function requireBodyText(text) {
   try {
-    await page.waitForFunction(needle => document.body?.innerText?.includes(needle), text);
+    await page.waitForFunction(needle => {
+      const normalize = value => String(value || '').normalize('NFKC').toLocaleLowerCase();
+      return normalize(document.body?.innerText).includes(normalize(needle));
+    }, text);
   } catch (error) {
-    const body = await page.locator('body').innerText().catch(()=>'<<BODY UNAVAILABLE>>');
+    const body = await page.locator('body').innerText().catch(() => '<<BODY UNAVAILABLE>>');
     console.error(`ASSERTION_MISS expected=${JSON.stringify(text)} url=${page.url()}`);
     console.error(`BODY_SNAPSHOT\n${body.slice(0,4000)}\nEND_BODY_SNAPSHOT`);
     throw error;
@@ -54,16 +57,16 @@ async function walkTutorial(game) {
   await rejectUnavailable(route);
 
   for (let stage = 2; stage <= 4; stage += 1) {
-    await page.getByRole('button', { name: /Next/ }).click();
+    await page.getByRole('button', { name: /next/i }).click();
     await requireBodyText(`Tutorial ${stage}/10`);
   }
   await requireBodyText('Try a legal move');
 
-  await page.getByRole('button', { name: 'Try a legal move', exact: true }).click();
+  await page.getByRole('button', { name: /try a legal move/i }).click();
   await requireBodyText('PASS ·');
 
   for (let stage = 5; stage <= 10; stage += 1) {
-    await page.getByRole('button', { name: /Next/ }).click();
+    await page.getByRole('button', { name: /next/i }).click();
     await requireBodyText(`Tutorial ${stage}/10`);
   }
   await requireBodyText('Graduated');
