@@ -92,7 +92,11 @@ export default function SolitaireTable({game}){
   </GameShell>;
 }
 
-function Foundation({card,suit,onClick,selected}){return <button type="button" onClick={onClick} className={`hw-solitaire-slot flex h-[62px] w-11 items-center justify-center rounded-lg ${selected?'hw-solitaire-action-glow':''}`}>{card?<MiniCard card={card}/>:<span className="text-lg text-white/18">{({hearts:'♥',diamonds:'♦',clubs:'♣',spades:'♠'})[suit]}</span>}</button>}
+function Foundation({card,suit,onClick,selected}){
+  const symbol=({hearts:'♥',diamonds:'♦',clubs:'♣',spades:'♠'})[suit];
+  if(card)return <div className={`flex h-[62px] w-11 items-center justify-center rounded-lg ${selected?'hw-solitaire-action-glow':''}`}><MiniCard card={card} selected={selected} onClick={onClick}/></div>;
+  return <button type="button" onClick={onClick} className={`hw-solitaire-slot flex h-[62px] w-11 items-center justify-center rounded-lg ${selected?'hw-solitaire-action-glow':''}`}><span className="text-lg text-white/18">{symbol}</span></button>;
+}
 
 function KlondikeBoard({state,selection,setSelection,legal,commit}){
   function chooseTableau(col,index){
