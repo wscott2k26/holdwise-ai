@@ -96,11 +96,11 @@ jobs:
           echo 'preview_server=READY'
           mkdir -p "$RUNNER_TEMP/webshots"
 
-          cat > "$RUNNER_TEMP/card-academy-browser-check.mjs" <<'NODE'
+          cat > ".release/card-academy-browser-check.mjs" <<'NODE'
           import { chromium } from 'playwright';
           import fs from 'node:fs';
           import path from 'node:path';
-          import { CARD_ACADEMY_GAMES } from './src/games/catalog.js';
+          import { CARD_ACADEMY_GAMES } from '../src/games/catalog.js';
 
           const base = 'http://127.0.0.1:4173';
           const out = process.env.RUNNER_TEMP;
@@ -165,7 +165,7 @@ jobs:
           await browser.close();
           console.log('PLAYWRIGHT_ROUTE_QUADCHECK=PASS');
           NODE
-          node "$RUNNER_TEMP/card-academy-browser-check.mjs"
+          node ".release/card-academy-browser-check.mjs"
 
       - name: Bundle hardened native web app
         run: |
