@@ -1,2 +1,3 @@
 HoldWise release blocker GREEN verification trigger
-expected_source_head_parent=7a3bfaaa9771dbc0130247dd002320ec758daf23
+expected_source_head_parent=e829121b5c41807eb84963748910f9d932f1e1c5
+release_staging_parity=expected-green
