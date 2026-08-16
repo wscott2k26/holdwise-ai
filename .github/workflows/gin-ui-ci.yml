@@ -1,0 +1,21 @@
+name: Gin Rummy UI TDD Gate
+
+on:
+  push:
+    branches:
+      - card-academy-full-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gin-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Gin Rummy engine and UI contract
+        run: node --test tests/gin-rummy-engine.test.mjs tests/gin-rummy-ui.test.mjs
