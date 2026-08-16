@@ -5,7 +5,7 @@ import GlassSurface from '@/components/premium/GlassSurface';
 import TactilePressable from '@/components/premium/TactilePressable';
 import { getGame } from '@/games/catalog';
 import { getEngine } from '@/games/engineRegistry';
-import { recordTutorialCompletion } from '@/lib/cardAcademyProgress';
+import { markTutorialComplete } from '@/lib/cardAcademyProgress';
 
 const GUIDES = {
   'texas-holdem': {objective:'Make the best five-card poker hand from your two hole cards and the five community cards.',table:'Four seats, dealer button, small blind, big blind, community board and a shared pot.',turn:'Betting runs preflop, flop, turn and river. Fold, check, call, bet, raise or go all-in only when legal.',scoring:'At showdown the strongest five-card hand wins each pot. Side pots protect all-in contribution limits.',mistakes:'Do not call every hand, ignore position, or raise below the legal minimum.'},
@@ -94,10 +94,10 @@ export default function GameTutorial() {
 
   useEffect(() => {
     if (step?.kind === 'reward' && !completed) {
-      recordTutorialCompletion(gameId);
+      markTutorialComplete(gameId,{family:game.family});
       setCompleted(true);
     }
-  }, [step?.kind,completed,gameId]);
+  }, [step?.kind,completed,gameId,game?.family]);
 
   if (!game || !engine || !step) return <div className="p-6 text-white">Tutorial unavailable.</div>;
 
