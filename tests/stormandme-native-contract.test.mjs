@@ -34,3 +34,13 @@ test('native controller exposes deterministic simulator ready and error marker f
   assert.match(source, /writeBootErrorMarker/);
   assert.match(source, /clearBootMarkers/);
 });
+
+test('Storm And Me intro remains visibly branded for at least 1.5 seconds before ready handoff', () => {
+  const source = fs.readFileSync(controllerPath, 'utf8');
+  assert.match(source, /minimumIntroDuration\s*:\s*TimeInterval\s*=\s*1\.5/);
+  assert.match(source, /bootExperienceStartedAt/);
+  assert.match(source, /dismissBootAfterMinimumDuration/);
+  assert.match(source, /ProcessInfo\.processInfo\.systemUptime/);
+  assert.match(source, /minimumIntroDuration\s*-\s*elapsed/);
+  assert.doesNotMatch(source, /case "ready":[\s\S]{0,300}bootView\.dismissReady\(\)/, 'ready should schedule the branded handoff instead of dismissing the intro immediately');
+});
