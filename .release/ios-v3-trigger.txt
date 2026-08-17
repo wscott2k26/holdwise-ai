@@ -2,4 +2,4 @@ HoldWise final iOS v3 trigger
 source_qa=PASS
 repo_visibility=PUBLIC
 reason=hardened per-route browser timeouts after Chrome hang
-run=2026-08-16T20:38:00-04:00
+run=2026-08-16T21:02:00-04:00
