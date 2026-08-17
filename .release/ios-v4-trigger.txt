@@ -2,3 +2,4 @@ HoldWise final iOS v4 trigger
 source_qa=PASS
 browser_gate=Playwright
 module_resolution=repo-workspace
+run=2026-08-16T21:02:00-04:00
