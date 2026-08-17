@@ -1,3 +1,5 @@
 HoldWise final iOS v3 trigger
 source_qa=PASS
-reason=bind Vite preview to 127.0.0.1 and bypass runner proxy
+repo_visibility=PUBLIC
+reason=hardened per-route browser timeouts after Chrome hang
+run=2026-08-16T20:38:00-04:00
