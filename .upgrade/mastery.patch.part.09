@@ -1,0 +1,37 @@
++      <p className="mt-3 rounded-xl border border-white/5 bg-black/15 p-3 text-xs leading-5 text-white/60">{practiceMessage}</p>
++      <div className="mt-3 space-y-1.5">{coachFacts.slice(0,4).map((fact,index)=><p key={index} className="text-[11px] leading-5 text-white/50">• {fact}</p>)}</div>
++      {tutorialDecision && <div className="mt-4 hw-decision-panel rounded-2xl p-3"><p className="hw-decision-kicker text-[9px] font-black uppercase tracking-[.16em]">Decision check · +{decisionAnswer ? 0 : 20} XP max</p><p className="hw-decision-question mt-1 text-sm font-black">{tutorialDecision.prompt}</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{tutorialDecision.options.map(option=>{const selected=decisionAnswer?.value===option.value;const correct=isTutorialDecisionCorrect(tutorialDecision,option.value);return <TactilePressable key={option.value} disabled={Boolean(decisionAnswer)} onClick={()=>chooseTutorialDecision(option.value)} className={`rounded-xl px-3 py-2.5 text-left text-xs font-bold ${decisionAnswer&&correct?'hw-decision-correct':selected?'hw-decision-wrong':'hw-decision-option'}`}>{option.label}</TactilePressable>})}</div>{decisionAnswer&&<p className="hw-decision-explanation mt-3 text-xs leading-5">{decisionAnswer.correct?'Correct. ':'Good try. '}{tutorialDecision.explanation}</p>}</div>}
+       {liveKinds.has(step.kind) && <div className="mt-4 grid grid-cols-2 gap-2"><TactilePressable onClick={tryLegalMove} className="rounded-2xl bg-[hsl(var(--hw-gold))] px-3 py-3 font-black text-[hsl(var(--hw-navy))]">Try a legal move</TactilePressable><TactilePressable onClick={resetPractice} className="rounded-2xl bg-white/7 px-3 py-3 font-black text-white shadow-none">Reset practice</TactilePressable></div>}
+     </GlassSurface>}
+ 
+-    {step.kind === 'reward' && <GlassSurface strength={5} goldEdge className="mt-4 rounded-[1.8rem] p-6 text-center"><GraduationCap size={44} className="mx-auto hw-gold-text"/><h2 className="mt-3 font-heading text-2xl font-black">Graduated</h2><p className="mt-2 text-sm text-white/58">The tutorial reward is saved. Full play uses the same rules engine you just practiced against.</p><TactilePressable onClick={()=>navigate(`/game/${gameId}`)} className="mt-5 w-full rounded-2xl bg-[hsl(var(--hw-gold))] py-3.5 font-black text-[hsl(var(--hw-navy))]"><Sparkles size={17} className="mr-2 inline"/>Open full table</TactilePressable></GlassSurface>}
++    {step.kind === 'reward' && <GlassSurface strength={5} goldEdge className="mt-4 rounded-[1.8rem] p-6 text-center"><GraduationCap size={44} className="mx-auto hw-gold-text"/><h2 className="mt-3 font-heading text-2xl font-black">Graduated</h2><p className="mt-2 text-sm text-white/60">The tutorial reward is saved. Full play uses the same rules engine you just practiced against.</p><TactilePressable onClick={()=>navigate(`/game/${gameId}`)} className="mt-5 w-full rounded-2xl bg-[hsl(var(--hw-gold))] py-3.5 font-black text-[hsl(var(--hw-navy))]"><Sparkles size={17} className="mr-2 inline"/>Open full table</TactilePressable></GlassSurface>}
+ 
+     <div className="mt-5 grid grid-cols-2 gap-2"><TactilePressable disabled={stepIndex===0} onClick={()=>setStepIndex(index=>Math.max(0,index-1))} className="rounded-2xl bg-white/7 px-3 py-3 text-sm font-black text-white shadow-none"><ArrowLeft size={16} className="mr-1 inline"/>Back</TactilePressable>{stepIndex<steps.length-1?<TactilePressable onClick={()=>setStepIndex(index=>Math.min(steps.length-1,index+1))} className="rounded-2xl bg-[hsl(var(--hw-gold))] px-3 py-3 text-sm font-black text-[hsl(var(--hw-navy))]">Next<ArrowRight size={16} className="ml-1 inline"/></TactilePressable>:<TactilePressable onClick={()=>navigate(`/game/${gameId}`)} className="rounded-2xl bg-[hsl(var(--hw-gold))] px-3 py-3 text-sm font-black text-[hsl(var(--hw-navy))]">Open full table</TactilePressable>}</div>
+   </div>;
+diff --git a/upgrade-ancestry.json b/upgrade-ancestry.json
+new file mode 100644
+index 0000000..29b52fc
+--- /dev/null
++++ b/upgrade-ancestry.json
+@@ -0,0 +1,20 @@
++{
++  "baseCommit": "1cf404f1ab37dd150e8f115950722a021513bc4c",
++  "files": {
++    "src/App.jsx": "c5a5cc6c4a7f7cf9acd4f46c0adc3b3997737d77",
++    "src/main.jsx": "cb2d9640a14631c9199965634964025de722abdb",
++    "src/pages/CardAcademyLobby.jsx": "d36044a909fac8bed5674b23b5573cf70b316df8",
++    "src/pages/DailyChallengeHub.jsx": "9f178c26a7347cadbc8880b6ef5fefd61a096076",
++    "src/pages/GameTutorial.jsx": "894975235dfb6aa054b53852f58d521d260ce0e9",
++    "src/lib/appContext.jsx": "fa1e9d173701081244d5ab9a974952c4bdf936a8",
++    "src/lib/cardAcademyProgress.js": "9d9bea9d7b3fa043d33d82e75e59c3e45ea9db06",
++    "src/components/premium/TactilePressable.jsx": "67bd71e86f94cd9f5c026aef6707e272576522b8",
++    "src/components/games/BlackjackTable.jsx": "d2782a917e589e7f5f7d4f461492e370fa7bfcf2",
++    "src/components/games/FamilyTable.jsx": "d2031d47cddc819c1e5fcc38a1734765eff6a1cf",
++    "src/components/games/GinRummyTable.jsx": "6358ebe8b4be4f993490d2d37907ad289a33f46a",
++    "src/components/games/HoldemTable.jsx": "c9f8f9e7748dd6b4bbe92e53ec4e0c002ab8d22b",
++    "src/components/games/SolitaireTable.jsx": "d0018b627512d6076874562b1a78a256a6011e86",
++    "src/components/games/TrickTable.jsx": "de6e56d2470c56c6e47c69d6e54d64a9c6948a13",
++    "src/components/games/VideoPokerTable.jsx": "dd66624fd6a18fb762e6efc188801c384b29d5ce"
++  }
++}
