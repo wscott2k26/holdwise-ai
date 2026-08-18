@@ -1,0 +1,95 @@
++  return <div><Opponents players={state.players} actor={state.actor} extra={p=>`${p.books} book${p.books===1?'':'s'}`}/><div className="my-5 grid grid-cols-2 gap-3"><GlassSurface strength={2} className="rounded-2xl p-3 text-center"><Fish className="mx-auto hw-family-gold"/><p className="mt-1 text-[9px] uppercase tracking-[.15em] text-white/40">Pond</p><p className="text-xl font-black text-white">{state.stock.length}</p></GlassSurface><GlassSurface strength={2} className="rounded-2xl p-3 text-center"><Trophy className="mx-auto hw-family-gold"/><p className="mt-1 text-[9px] uppercase tracking-[.15em] text-white/40">Your books</p><p className="text-xl font-black text-white">{state.players[HUMAN].books}</p></GlassSurface></div><div className="flex overflow-x-auto pb-3"><div className="flex min-w-max -space-x-6 px-5">{state.players[HUMAN].hand.map(card=><PlayingCard key={card.id} card={card} selected={card.rank===rank} onClick={()=>setRank(card.rank)}/>)}</div></div><div className="mt-3"><p className="text-[9px] font-black uppercase tracking-[.15em] text-white/40">Ask for rank {rank}</p><div className="mt-2 grid grid-cols-3 gap-2">{[1,2,3].map(seat=><TactilePressable key={seat} onClick={()=>setTarget(seat)} className={`rounded-xl py-2 text-xs font-black ${target===seat?'bg-[hsl(var(--hw-gold))] text-[hsl(var(--hw-navy))]':'bg-white/5 text-white shadow-none'}`}>Player {seat+1}</TactilePressable>)}</div><TactilePressable disabled={!ask} onClick={()=>ask&&commit(ask)} className="mt-3 w-full rounded-2xl bg-[hsl(var(--hw-gold))] py-3 font-black text-[hsl(var(--hw-navy))]">Go Fish · Ask {rank}</TactilePressable>{state.lastEvent&&<p className="mt-2 text-center text-xs text-white/45">{state.lastEvent.type==='got-cards'?`Got ${state.lastEvent.count} card${state.lastEvent.count===1?'':'s'}!`:state.lastEvent.luckyFish?'Lucky fish — you drew the rank you asked for!':'Go Fish.'}</p>}</div></div>;
+ }
+ 
+ function WarBoard({state,commit}){
+diff --git a/src/components/games/GinRummyTable.jsx b/src/components/games/GinRummyTable.jsx
+index 6358ebe..22f173c 100644
+--- a/src/components/games/GinRummyTable.jsx
++++ b/src/components/games/GinRummyTable.jsx
+@@ -79,19 +79,19 @@ export default function GinRummyTable({ game }) {
+ 
+       <section className="hw-gin-table min-h-[515px] rounded-[2.8rem] p-4 sm:rounded-[4rem] sm:p-6">
+         <div className="relative z-10 text-center">
+-          <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-white/8 bg-black/20 px-3 py-2 text-xs font-black text-white/70 backdrop-blur-md"><Bot size={14}/>Opponent · {state.players[1].hand.length} cards</div>
++          <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-2 text-xs font-black text-white/70 backdrop-blur-md"><Bot size={14}/>Opponent · {state.players[1].hand.length} cards</div>
+           <div className="mt-3 flex justify-center -space-x-4">{state.players[1].hand.map((card,index)=>state.roundComplete?<PlayingCard key={`${card.id}-${index}`} card={card}/>:<span key={index} className="h-20 w-14 rounded-xl hw-gin-stock sm:h-24 sm:w-16"/>)}</div>
+           {state.roundComplete&&opponentAnalysis&&<p className="mt-2 text-[10px] text-white/45">Opponent deadwood {opponentAnalysis.deadwoodPoints}</p>}
+         </div>
+ 
+         <div className="relative z-10 mx-auto my-5 flex items-center justify-center gap-5">
+-          <button type="button" disabled={!canDrawStock} onClick={()=>canDrawStock&&commit({type:'draw-stock',actor:HUMAN})} className={`min-h-[96px] min-w-[70px] rounded-xl p-1 ${state.stock.length?'hw-gin-stock':'border border-white/8 bg-black/10'} ${canDrawStock?'cursor-pointer':'opacity-50'}`} aria-label="Stock"><span className="text-[9px] font-black uppercase tracking-wider text-white/70">Stock</span><span className="mt-1 block text-xs font-black text-white">{state.stock.length}</span></button>
+-          <div className="text-center"><p className="mb-1 text-[9px] font-black uppercase tracking-[.16em] text-white/35">Discard</p><div onClick={()=>canDrawDiscard&&commit({type:'draw-discard',actor:HUMAN})} className={canDrawDiscard?'cursor-pointer':''}>{state.discard.at(-1)?<PlayingCard card={state.discard.at(-1)}/>:<div className="h-24 w-16 rounded-xl border border-white/8 bg-black/10"/>}</div></div>
++          <button type="button" disabled={!canDrawStock} onClick={()=>canDrawStock&&commit({type:'draw-stock',actor:HUMAN})} className={`min-h-[96px] min-w-[70px] rounded-xl p-1 ${state.stock.length?'hw-gin-stock':'border border-white/10 bg-black/10'} ${canDrawStock?'cursor-pointer':'opacity-50'}`} aria-label="Stock"><span className="text-[9px] font-black uppercase tracking-wider text-white/70">Stock</span><span className="mt-1 block text-xs font-black text-white">{state.stock.length}</span></button>
++          <div className="text-center"><p className="mb-1 text-[9px] font-black uppercase tracking-[.16em] text-white/35">Discard</p><div onClick={()=>canDrawDiscard&&commit({type:'draw-discard',actor:HUMAN})} className={canDrawDiscard?'cursor-pointer':''}>{state.discard.at(-1)?<PlayingCard card={state.discard.at(-1)}/>:<div className="h-24 w-16 rounded-xl border border-white/10 bg-black/10"/>}</div></div>
+           <div className="hw-gin-purple rounded-2xl p-3 text-left"><p className="text-[9px] font-black uppercase tracking-[.15em] text-violet-200/75">Phase</p><p className="mt-1 text-sm font-black capitalize text-white">{state.phase}</p><p className="mt-1 text-[10px] text-white/45">Turn {state.turns+1}</p></div>
+         </div>
+ 
+-        <div className="relative z-10 rounded-[1.6rem] border border-white/8 bg-black/12 p-3">
+-          <div className="mb-3 flex items-center justify-between gap-3"><div><p className="text-[9px] font-black uppercase tracking-[.16em] text-white/42">Your sorted hand</p><p className="mt-1 text-xs text-white/55">{state.phase==='draw'?'Choose Stock or Discard.':'Choose one card to discard.'}</p></div><span className="hw-gin-deadwood rounded-full px-3 py-1.5 text-xs font-black">Deadwood {analysis.deadwoodPoints}</span></div>
++        <div className="relative z-10 rounded-[1.6rem] border border-white/10 bg-black/10 p-3">
++          <div className="mb-3 flex items-center justify-between gap-3"><div><p className="text-[9px] font-black uppercase tracking-[.16em] text-white/40">Your sorted hand</p><p className="mt-1 text-xs text-white/55">{state.phase==='draw'?'Choose Stock or Discard.':'Choose one card to discard.'}</p></div><span className="hw-gin-deadwood rounded-full px-3 py-1.5 text-xs font-black">Deadwood {analysis.deadwoodPoints}</span></div>
+           <div className="flex overflow-x-auto pb-3"><div className="flex min-w-max -space-x-6 px-4 sm:-space-x-4">{state.players[HUMAN].hand.map(card=><div key={card.id} className={`transition-transform ${selected===card.id?'-translate-y-3':''}`}><PlayingCard card={card} selected={selected===card.id} onClick={state.phase==='discard'?()=>setSelected(current=>current===card.id?null:card.id):undefined}/></div>)}</div></div>
+           <div className="mt-1 grid grid-cols-2 gap-2 text-[10px] text-white/50"><span>Meld groups: <strong className="text-white">{analysis.melds.length}</strong></span><span className="text-right">Target: <strong className="text-white">100</strong></span></div>
+         </div>
+@@ -99,7 +99,7 @@ export default function GinRummyTable({ game }) {
+ 
+       {state.phase==='discard'&&state.actor===HUMAN&&<GlassSurface strength={4} goldEdge className="mt-3 rounded-[1.6rem] p-3">
+         {showCoach&&<div className="mb-3 hw-gin-purple rounded-2xl p-3"><p className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[.16em] text-violet-200"><Brain size={13}/>Coach Ace</p><p className="mt-1 text-xs leading-5 text-white/60">Knock is offered only if discarding the selected card leaves 10 or fewer deadwood points. GIN means the remaining ten cards have zero deadwood.</p></div>}
+-        <div className="grid grid-cols-2 gap-2"><TactilePressable disabled={!normalDiscard} onClick={()=>normalDiscard&&commit({type:'discard',actor:HUMAN,cardId:selected})} className="rounded-2xl bg-white/7 px-4 py-3.5 font-black text-white shadow-none">Discard</TactilePressable>{knock?<TactilePressable onClick={()=>commit({type:'knock-discard',actor:HUMAN,cardId:selected})} className="hw-gin-knock rounded-2xl px-4 py-3.5 font-black">{knock.gin?'GIN':'Knock'} · {knock.deadwood}</TactilePressable>:<TactilePressable disabled className="rounded-2xl bg-white/4 px-4 py-3.5 font-black text-white/30 shadow-none">Knock</TactilePressable>}</div>
++        <div className="grid grid-cols-2 gap-2"><TactilePressable disabled={!normalDiscard} onClick={()=>normalDiscard&&commit({type:'discard',actor:HUMAN,cardId:selected})} className="rounded-2xl bg-white/7 px-4 py-3.5 font-black text-white shadow-none">Discard</TactilePressable>{knock?<TactilePressable onClick={()=>commit({type:'knock-discard',actor:HUMAN,cardId:selected})} className="hw-gin-knock rounded-2xl px-4 py-3.5 font-black">{knock.gin?'GIN':'Knock'} · {knock.deadwood}</TactilePressable>:<TactilePressable disabled className="rounded-2xl bg-white/5 px-4 py-3.5 font-black text-white/30 shadow-none">Knock</TactilePressable>}</div>
+         <button type="button" onClick={()=>setShowCoach(v=>!v)} className="mt-2 min-h-[44px] w-full text-[10px] font-bold text-white/40">{showCoach?'Hide':'Show'} strategy note</button>
+       </GlassSurface>}
+ 
+diff --git a/src/components/games/HoldemTable.jsx b/src/components/games/HoldemTable.jsx
+index c9f8f9e..8e8db8e 100644
+--- a/src/components/games/HoldemTable.jsx
++++ b/src/components/games/HoldemTable.jsx
+@@ -135,15 +135,15 @@ export default function HoldemTable({ game }) {
+         </section>
+ 
+         {!state.handComplete && state.actor === humanSeat && <GlassSurface strength={4} goldEdge className="mt-3 rounded-[1.6rem] p-3">
+-          {sizeAction && <div className="mb-3 rounded-2xl border border-white/8 bg-black/15 p-3">
++          {sizeAction && <div className="mb-3 rounded-2xl border border-white/10 bg-black/15 p-3">
+             <div className="flex items-center justify-between text-xs"><span className="font-bold text-white/65">{sizeAction.type === 'raise' ? 'Raise to' : 'Bet'} <strong className="ml-1 hw-gold-text">{betTo}</strong></span><span className="text-white/40">max {sizeAction.maxTo}</span></div>
+             <input type="range" min={sizeAction.minTo} max={sizeAction.maxTo} step={Math.max(1,state.config.smallBlind)} value={betTo} onChange={event=>setBetTo(clampTarget(Number(event.target.value)))} className="mt-2 h-9 w-full accent-amber-300" aria-label={`${sizeAction.type} size`} />
+             <div className="grid grid-cols-3 gap-2"><TactilePressable onClick={()=>preset(.5)} className="rounded-xl bg-white/5 py-2 text-[11px] font-bold text-white shadow-none">½ Pot</TactilePressable><TactilePressable onClick={()=>preset(1)} className="rounded-xl bg-white/5 py-2 text-[11px] font-bold text-white shadow-none">Pot</TactilePressable><TactilePressable onClick={()=>setBetTo(sizeAction.maxTo)} className="rounded-xl bg-white/5 py-2 text-[11px] font-bold text-white shadow-none">Max</TactilePressable></div>
+           </div>}
+           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+             {fold && <TactilePressable onClick={()=>act(fold)} className="hw-holdem-action-danger rounded-2xl px-3 py-3.5 font-black text-white">Fold</TactilePressable>}
+-            {check && <TactilePressable onClick={()=>act(check)} className="rounded-2xl bg-white/8 px-3 py-3.5 font-black text-white shadow-none">Check</TactilePressable>}
+-            {call && <TactilePressable onClick={()=>act(call)} className="rounded-2xl bg-white/8 px-3 py-3.5 font-black text-white shadow-none">Call {call.amount}</TactilePressable>}
++            {check && <TactilePressable onClick={()=>act(check)} className="rounded-2xl bg-white/10 px-3 py-3.5 font-black text-white shadow-none">Check</TactilePressable>}
++            {call && <TactilePressable onClick={()=>act(call)} className="rounded-2xl bg-white/10 px-3 py-3.5 font-black text-white shadow-none">Call {call.amount}</TactilePressable>}
+             {sizeAction && <TactilePressable onClick={()=>act({type:sizeAction.type,to:betTo})} className="rounded-2xl bg-[hsl(var(--hw-gold))] px-3 py-3.5 font-black text-[hsl(var(--hw-navy))]">{sizeAction.type === 'raise' ? 'Raise' : 'Bet'} {betTo}</TactilePressable>}
+             {allIn && <TactilePressable onClick={()=>act(allIn)} className="rounded-2xl border border-amber-300/25 bg-amber-300/10 px-3 py-3.5 font-black text-amber-100 shadow-none">All In</TactilePressable>}
+           </div>
+diff --git a/src/components/games/SolitaireTable.jsx b/src/components/games/SolitaireTable.jsx
+index d0018b6..c7c354d 100644
+--- a/src/components/games/SolitaireTable.jsx
++++ b/src/components/games/SolitaireTable.jsx
+@@ -68,7 +68,7 @@ export default function SolitaireTable({game}){
+ 
+   return <GameShell game={{...game,title:TITLES[id]}} coachContext={{game:TITLES[id],facts:coachFacts}}>
+     <div className="mx-auto max-w-4xl">
+-      <div className="mb-2 flex gap-2 overflow-x-auto pb-1">{SOLITAIRE_IDS.map(tab=><TactilePressable key={tab} onClick={()=>navigate(`/game/${tab}`)} className={`min-w-max rounded-xl px-3 py-2 text-[11px] font-black ${tab===id?'bg-[hsl(var(--hw-gold))] text-[hsl(var(--hw-navy))]':'bg-white/6 text-white shadow-none'}`}>{TITLES[tab]}</TactilePressable>)}</div>
++      <div className="mb-2 flex gap-2 overflow-x-auto pb-1">{SOLITAIRE_IDS.map(tab=><TactilePressable key={tab} onClick={()=>navigate(`/game/${tab}`)} className={`min-w-max rounded-xl px-3 py-2 text-[11px] font-black ${tab===id?'bg-[hsl(var(--hw-gold))] text-[hsl(var(--hw-navy))]':'bg-white/5 text-white shadow-none'}`}>{TITLES[tab]}</TactilePressable>)}</div>
+ 
+       <div className="mb-2 grid grid-cols-3 gap-2 text-center"><GlassSurface strength={2} className="rounded-xl p-2"><p className="text-[8px] uppercase tracking-[.15em] text-white/40">Game</p><p className="mt-1 text-sm font-black text-white">{TITLES[id]}</p></GlassSurface><GlassSurface strength={2} className="rounded-xl p-2"><p className="text-[8px] uppercase tracking-[.15em] text-white/40">Moves</p><p className="mt-1 text-sm font-black hw-gold-text">{state.moves||0}</p></GlassSurface><GlassSurface strength={2} className="rounded-xl p-2"><p className="text-[8px] uppercase tracking-[.15em] text-white/40">Legal now</p><p className="mt-1 text-sm font-black text-white">{legal.filter(a=>a.type!=='undo').length}</p></GlassSurface></div>
+ 
+@@ -86,7 +86,7 @@ export default function SolitaireTable({game}){
+ 
+       {terminal&&<GlassSurface strength={4} goldEdge className="mt-3 rounded-[1.6rem] p-5 text-center"><Trophy size={36} className="mx-auto hw-gold-text"/><h3 className="mt-2 font-heading text-2xl font-black text-white">{gameResult?.won?'Table cleared!':'No more moves'}</h3><p className="mt-1 text-sm text-white/55">{gameResult?.won?'Full game complete. Mastery XP recorded.':'This deal is complete. Start a new deal or undo if available.'}</p><TactilePressable onClick={()=>newDeal()} className="mt-4 rounded-2xl bg-[hsl(var(--hw-gold))] px-5 py-3 font-black text-[hsl(var(--hw-navy))]">New Deal</TactilePressable></GlassSurface>}
+ 
+-      <GlassSurface strength={3} className="mt-3 grid grid-cols-3 gap-2 rounded-2xl p-2"><TactilePressable disabled={!legal.some(a=>a.type==='undo')} onClick={undo} className="rounded-xl bg-white/6 px-2 py-3 text-xs font-black text-white shadow-none"><Undo2 size={15} className="mr-1 inline"/>Undo</TactilePressable><TactilePressable disabled={terminal} onClick={showHint} className="rounded-xl bg-white/6 px-2 py-3 text-xs font-black text-white shadow-none"><Lightbulb size={15} className="mr-1 inline"/>Hint</TactilePressable><TactilePressable onClick={()=>newDeal()} className="rounded-xl bg-white/6 px-2 py-3 text-xs font-black text-white shadow-none"><RotateCcw size={15} className="mr-1 inline"/>New Deal</TactilePressable></GlassSurface>
++      <GlassSurface strength={3} className="mt-3 grid grid-cols-3 gap-2 rounded-2xl p-2"><TactilePressable disabled={!legal.some(a=>a.type==='undo')} onClick={undo} className="rounded-xl bg-white/5 px-2 py-3 text-xs font-black text-white shadow-none"><Undo2 size={15} className="mr-1 inline"/>Undo</TactilePressable><TactilePressable disabled={terminal} onClick={showHint} className="rounded-xl bg-white/5 px-2 py-3 text-xs font-black text-white shadow-none"><Lightbulb size={15} className="mr-1 inline"/>Hint</TactilePressable><TactilePressable onClick={()=>newDeal()} className="rounded-xl bg-white/5 px-2 py-3 text-xs font-black text-white shadow-none"><RotateCcw size={15} className="mr-1 inline"/>New Deal</TactilePressable></GlassSurface>
+       <p className="mt-2 text-center text-[10px] text-white/35"><Sparkles size={11} className="mr-1 inline hw-gold-text"/>Tap a card, then its destination. Only engine-verified legal moves are accepted.</p>
+     </div>
+   </GameShell>;
+@@ -95,7 +95,7 @@ export default function SolitaireTable({game}){
+ function Foundation({card,suit,onClick,selected}){
+   const symbol=({hearts:'♥',diamonds:'♦',clubs:'♣',spades:'♠'})[suit];
+   if(card)return <div className={`flex h-[62px] w-11 items-center justify-center rounded-lg ${selected?'hw-solitaire-action-glow':''}`}><MiniCard card={card} selected={selected} onClick={onClick}/></div>;
+-  return <button type="button" onClick={onClick} className={`hw-solitaire-slot flex h-[62px] w-11 items-center justify-center rounded-lg ${selected?'hw-solitaire-action-glow':''}`}><span className="text-lg text-white/18">{symbol}</span></button>;
++  return <button type="button" onClick={onClick} className={`hw-solitaire-slot flex h-[62px] w-11 items-center justify-center rounded-lg ${selected?'hw-solitaire-action-glow':''}`}><span className="text-lg text-white/25">{symbol}</span></button>;
+ }
+ 
