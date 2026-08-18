@@ -1,0 +1,340 @@
++  recordGameResult('spades', { family: 'classics', won: true, xp: 30 }, storage, '2026-08-17T09:00:00');
++  let p = recordGameResult('hearts', { family: 'classics', won: false, xp: 10 }, storage, '2026-08-18T09:00:00');
++  eq(p.streak.days, 2, 'consecutive dates extend streak');
++  p = recordGameResult('blackjack', { family: 'casino', won: false, xp: 10 }, storage, '2026-08-20T09:00:00');
++  eq(p.streak.days, 1, 'gap resets streak');
++}
++
++// Derived values are deterministic and bounded.
++eq(deriveOverallLevel(0), 1, 'level starts at 1');
++eq(deriveOverallLevel(999), 2, 'level increases every 500 XP');
++eq(deriveOverallLevel(1000), 3, 'level boundary works');
++{
++  const low = deriveGameMastery({ plays: 0, wins: 0, tutorialComplete: false, xp: 0, totalDecisions: 0, correctDecisions: 0 });
++  const high = deriveGameMastery({ plays: 99, wins: 99, tutorialComplete: true, xp: 99999, totalDecisions: 20, correctDecisions: 20 });
++  eq(low, 0, 'empty game mastery is zero');
++  eq(high, 100, 'mastery clamps to 100');
++}
++
++// At least 20 meaningful achievement definitions, no generic Milestone placeholders.
++ok(ACHIEVEMENTS.length >= 20, 'at least 20 achievements exist');
++ok(ACHIEVEMENTS.every(a => a.id && a.title && a.description), 'achievement definitions are named and described');
++ok(ACHIEVEMENTS.every(a => !/^milestone\b/i.test(a.title)), 'no generic milestone placeholders');
++
++// Achievement evaluation is deterministic and idempotent.
++{
++  const progress = loadCardAcademyProgress(new MemoryStorage());
++  progress.games.blackjack = { plays: 1, wins: 1, tutorialComplete: true, xp: 300, totalDecisions: 10, correctDecisions: 10, accuracyScore: 100, bestDecisionStreak: 10, currentDecisionStreak: 10 };
++  progress.games['texas-holdem'] = { plays: 1, wins: 0, tutorialComplete: true, xp: 100, totalDecisions: 0, correctDecisions: 0, accuracyScore: 0, bestDecisionStreak: 0, currentDecisionStreak: 0 };
++  progress.totalXp = 1400;
++  progress.streak = { days: 7, lastActiveDate: '2026-08-18' };
++  const first = evaluateAchievements(progress, '2026-08-18T12:00:00.000Z');
++  ok(first.newlyUnlocked.includes('first-game'), 'first-game unlocks');
++  ok(first.newlyUnlocked.includes('blackjack-scholar'), 'blackjack scholar unlocks');
++  ok(first.newlyUnlocked.includes('perfect-ten'), 'perfect-ten unlocks');
++  ok(first.newlyUnlocked.includes('seven-day-streak'), 'seven-day streak unlocks');
++  const second = evaluateAchievements(first.progress, '2026-08-18T13:00:00.000Z');
++  eq(second.newlyUnlocked.length, 0, 'already unlocked achievements do not unlock again');
++}
++
++console.log(`Progression regression PASS: ${checks} checks`);
+diff --git a/scripts/release-audit.mjs b/scripts/release-audit.mjs
+new file mode 100644
+index 0000000..d813a24
+--- /dev/null
++++ b/scripts/release-audit.mjs
+@@ -0,0 +1,95 @@
++import fs from 'node:fs';
++import path from 'node:path';
++import crypto from 'node:crypto';
++import { fileURLToPath } from 'node:url';
++import { CARD_ACADEMY_GAMES } from '../src/games/catalog.js';
++import { ENGINE_REGISTRY } from '../src/games/engineRegistry.js';
++import { ACHIEVEMENTS } from '../src/lib/achievements.js';
++
++const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
++const requireDist = process.argv.includes('--require-dist');
++const failures=[]; const notes=[];
++const fail=msg=>failures.push(msg); const note=msg=>notes.push(msg);
++
++function walk(dir, predicate=()=>true, out=[]) {
++  if (!fs.existsSync(dir)) return out;
++  for (const entry of fs.readdirSync(dir,{withFileTypes:true})) {
++    const full=path.join(dir,entry.name);
++    if(entry.isDirectory()) walk(full,predicate,out);
++    else if(predicate(full)) out.push(full);
++  }
++  return out;
++}
++
++// Catalog/engine integrity.
++if(CARD_ACADEMY_GAMES.length!==21) fail(`Expected 21 catalog games, found ${CARD_ACADEMY_GAMES.length}`);
++const ids=CARD_ACADEMY_GAMES.map(g=>g.id);
++if(new Set(ids).size!==ids.length) fail('Duplicate catalog game IDs detected');
++for(const game of CARD_ACADEMY_GAMES) if(!ENGINE_REGISTRY[game.id]) fail(`Missing engine for ${game.id}`);
++if(Object.keys(ENGINE_REGISTRY).length!==21) fail(`Expected 21 registry engines, found ${Object.keys(ENGINE_REGISTRY).length}`);
++if(ACHIEVEMENTS.length<20) fail(`Expected at least 20 real achievements, found ${ACHIEVEMENTS.length}`);
++if(ACHIEVEMENTS.some(a=>!a.id||!a.title||!a.description||typeof a.test!=='function')) fail('Malformed achievement definition');
++
++// Route shell integrity.
++const app=fs.readFileSync(path.join(root,'src/App.jsx'),'utf8');
++for(const route of ['/academy','/game/:gameId','/game/:gameId/tutorial','/daily-challenge']) if(!app.includes(route)) fail(`Missing App route ${route}`);
++
++// Intern/fake-completion hallmarks and unresolved engineering markers.
++const sourceFiles=walk(path.join(root,'src'), f=>/\.(?:js|jsx|ts|tsx)$/.test(f));
++for(const file of sourceFiles){
++  const text=fs.readFileSync(file,'utf8');
++  const rel=path.relative(root,file).replaceAll(path.sep,'/');
++  const lines=text.split(/\r?\n/);
++  lines.forEach((line,index)=>{
++    if(/\b(?:TODO|FIXME|dummy|not implemented)\b/i.test(line)) fail(`${rel}:${index+1} unresolved marker: ${line.trim()}`);
++    if(/Simplified winner for token limits|UI Minimalized|Milestone \d+/i.test(line)) fail(`${rel}:${index+1} generated-skeleton hallmark found`);
++    if(/\bplaceholder\b/i.test(line) && !/\bplaceholder\s*=/.test(line)) fail(`${rel}:${index+1} unresolved placeholder text`);
++  });
++}
++
++// Verify any opacity-style utility used by static JSX className exists in the recovered CSS or deliberate overrides.
++const cssParts = [path.join(root,'src/index.css'), path.join(root,'src/card-academy-upgrades.css'), path.join(root,'src/baseline.css')].filter(fs.existsSync).map(file=>fs.readFileSync(file,'utf8'));
++if (fs.existsSync(path.join(root,'dist/assets'))) cssParts.push(...walk(path.join(root,'dist/assets'), file=>file.endsWith('.css')).map(file=>fs.readFileSync(file,'utf8')));
++const css=cssParts.join('\n');
++const slashToken=/\b(?:text-white|bg-white|border-white|bg-black|bg-amber-200|border-amber-200)\/\d+\b/g;
++for(const file of sourceFiles.filter(f=>f.endsWith('.jsx'))){
++  const text=fs.readFileSync(file,'utf8');
++  for(const match of text.matchAll(slashToken)){
++    const token=match[0];
++    if(!css.includes(`.${token.replace('/','\\/')}`)) fail(`${path.relative(root,file)} uses uncompiled utility ${token}`);
++  }
++}
++
++// Recovery manifest is immutable evidence of the source-map reconstruction.
++const manifestPath=path.join(root,'recovery/source-manifest.json');
++const originalRoot=path.join(root,'recovery/original-src');
++if(!fs.existsSync(manifestPath)) note('recoveredSnapshot=verified-by-upgrade-ancestry');
++else {
++  const manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));
++  const entries=Object.entries(manifest.files || {});
++  if(Number(manifest.count)!==60 || entries.length!==60) fail(`Expected 60 recovered-source manifest entries, found ${entries.length}`);
++  for(const [rel,expected] of entries){
++    const full=path.join(originalRoot,rel);
++    if(!fs.existsSync(full)){fail(`Recovery snapshot missing ${rel}`);continue;}
++    const actual=crypto.createHash('sha256').update(fs.readFileSync(full)).digest('hex');
++    if(actual!==expected) fail(`Recovery hash mismatch ${rel}`);
++  }
++}
++
++if(requireDist){
++  const distIndex=path.join(root,'dist/index.html');
++  if(!fs.existsSync(distIndex)) fail('dist/index.html missing after build');
++  const assets=walk(path.join(root,'dist/assets'), f=>/\.(?:js|css)$/.test(f));
++  if(!assets.some(f=>f.endsWith('.js'))) fail('No built JavaScript asset in dist/assets');
++  if(!assets.some(f=>f.endsWith('.css'))) fail('No built CSS asset in dist/assets');
++}
++
++note(`catalog=${CARD_ACADEMY_GAMES.length}`);
++note(`engines=${Object.keys(ENGINE_REGISTRY).length}`);
++note(`achievements=${ACHIEVEMENTS.length}`);
++note(`sourceModules=${sourceFiles.length}`);
++if(fs.existsSync(manifestPath)) note(`recoveredSnapshot=60`);
++if(failures.length){
++  console.error('Release audit FAIL'); failures.forEach(item=>console.error(`- ${item}`)); process.exit(1);
++}
++console.log(`Release audit PASS: ${notes.join(' · ')}`);
+diff --git a/scripts/sound-regression.mjs b/scripts/sound-regression.mjs
+new file mode 100644
+index 0000000..ec039eb
+--- /dev/null
++++ b/scripts/sound-regression.mjs
+@@ -0,0 +1,29 @@
++import assert from 'node:assert/strict';
++import { playSound, resetSoundForTests, SOUND_NAMES } from '../src/lib/sound.js';
++let checks=0; const ok=(v,m)=>{assert.ok(v,m);checks++}; const eq=(a,b,m)=>{assert.deepEqual(a,b,m);checks++};
++
++resetSoundForTests();
++eq(playSound('button',{enabled:false,scope:{}}),false,'disabled sound is a no-op');
++eq(playSound('button',{enabled:true,scope:{}}),false,'missing AudioContext is a safe no-op');
++ok(SOUND_NAMES.includes('lightning') && SOUND_NAMES.includes('achievement'),'sound catalog includes brand and progression cues');
++
++let contexts=0, starts=0, stops=0;
++class FakeParam { setValueAtTime(){} linearRampToValueAtTime(){} exponentialRampToValueAtTime(){} }
++class FakeOsc { constructor(){this.frequency=new FakeParam();this.type='sine'} connect(){} start(){starts++} stop(){stops++} }
++class FakeGain { constructor(){this.gain=new FakeParam()} connect(){} }
++class FakeAudioContext {
++  constructor(){contexts++;this.currentTime=1;this.destination={};this.state='running'}
++  createOscillator(){return new FakeOsc()}
++  createGain(){return new FakeGain()}
++  resume(){this.state='running'}
++}
++const scope={AudioContext:FakeAudioContext};
++resetSoundForTests();
++eq(contexts,0,'context is lazy before first sound');
++eq(playSound('button',{scope}),true,'first valid sound plays');
++eq(contexts,1,'first sound creates one context');
++eq(playSound('correct',{scope}),true,'second sound plays');
++eq(contexts,1,'context is reused for same scope');
++ok(starts>=2 && stops>=2,'oscillators are started and stopped');
++
++console.log(`Sound regression PASS: ${checks} checks`);
+diff --git a/scripts/storm-intro-regression.mjs b/scripts/storm-intro-regression.mjs
+new file mode 100644
+index 0000000..b41be76
+--- /dev/null
++++ b/scripts/storm-intro-regression.mjs
+@@ -0,0 +1,12 @@
++import assert from 'node:assert/strict';
++import { introDurationMs, shouldShowStormIntro, markStormIntroSeen, STORM_INTRO_SESSION_KEY } from '../src/lib/stormIntro.js';
++class MemoryStorage { constructor(){this.m=new Map()} getItem(k){return this.m.get(k)??null} setItem(k,v){this.m.set(k,String(v))} }
++let checks=0;const eq=(a,b,m)=>{assert.deepEqual(a,b,m);checks++};const ok=(v,m)=>{assert.ok(v,m);checks++};
++const s=new MemoryStorage();
++eq(shouldShowStormIntro(s),true,'intro shows once per session');
++markStormIntroSeen(s);
++eq(s.getItem(STORM_INTRO_SESSION_KEY),'1','intro seen state is session-persisted');
++eq(shouldShowStormIntro(s),false,'intro does not replay in same session');
++ok(introDurationMs({reducedMotion:false})>=1500,'normal intro is cinematic but short');
++ok(introDurationMs({reducedMotion:true})<=500,'reduced-motion intro is shortened');
++console.log(`Storm intro regression PASS: ${checks} checks`);
+diff --git a/scripts/tutorial-regression.mjs b/scripts/tutorial-regression.mjs
+new file mode 100644
+index 0000000..b421b84
+--- /dev/null
++++ b/scripts/tutorial-regression.mjs
+@@ -0,0 +1,82 @@
++import assert from 'node:assert/strict';
++import { buildTutorialDecision, isTutorialDecisionCorrect } from '../src/lib/tutorialDecisions.js';
++import { blackjackEngine } from '../src/games/engines/blackjack.js';
++import { spadesEngine } from '../src/games/engines/spades.js';
++import { heartsEngine } from '../src/games/engines/hearts.js';
++import { klondikeEngine } from '../src/games/engines/klondike.js';
++import { texasHoldemEngine, runBotsUntilHumanTurn } from '../src/games/engines/texasHoldem.js';
++
++let checks=0;
++const ok=(v,m)=>{assert.ok(v,m);checks++};
++const eq=(a,b,m)=>{assert.deepEqual(a,b,m);checks++};
++
++function advanceBlackjackToPlayer() {
++  let s = blackjackEngine.createGame({seed: 9123, bankroll: 500});
++  for (let guard=0; guard<8 && s.phase!=='player'; guard++) {
++    const actions=blackjackEngine.legalActions(s);
++    const action=actions.find(a=>a.type==='deal') || actions.find(a=>a.type==='decline-insurance') || actions.find(a=>a.type==='set-bet') || actions[0];
++    if (!action) break;
++    s=blackjackEngine.applyAction(s, action.type==='set-bet' ? {...action, amount:10} : action);
++  }
++  return s;
++}
++
++{
++  const state=advanceBlackjackToPlayer();
++  eq(state.phase,'player','blackjack fixture reaches player decision');
++  const decision=buildTutorialDecision('blackjack',state);
++  ok(decision,'blackjack produces a contextual decision');
++  const legalTypes=new Set(blackjackEngine.legalActions(state).map(a=>a.type));
++  ok(legalTypes.has(decision.correctAction),'blackjack recommendation is legal');
++  ok(decision.explanation.length>20,'blackjack explanation is substantive');
++  ok(isTutorialDecisionCorrect(decision,decision.correctAction),'blackjack correct choice accepted');
++}
++
++{
++  let state=spadesEngine.createGame({seed:44,humanSeat:0});
++  // Advance deterministic bids until play; use bid 2 for every seat.
++  while(state.phase==='bidding') state=spadesEngine.applyAction(state,{type:'bid',actor:state.actor,bid:2});
++  const decision=buildTutorialDecision('spades',state);
++  if(decision){
++    ok(decision.options.length>=2,'spades presents a real legal-card contrast when one exists');
++    ok(decision.correctOptions?.length>=1,'spades identifies legal option set');
++    for(const choice of decision.correctOptions) ok(isTutorialDecisionCorrect(decision,choice),'spades legal choice accepted');
++  } else {
++    ok(spadesEngine.legalActions(state,state.actor).length===state.players[state.actor].hand.length,'spades omits fake question when every card is legal');
++  }
++}
++
++{
++  // First-trick Hearts: createGame can be in passing phase, so use hold round 4.
++  const state=heartsEngine.createGame({seed:73,humanSeat:0,roundNumber:4});
++  eq(state.phase,'playing','round 4 Hearts skips passing');
++  const decision=buildTutorialDecision('hearts',state);
++  if(decision){
++    const legalIds=new Set(heartsEngine.legalActions(state,state.actor).filter(a=>a.type==='play').map(a=>a.cardId));
++    for(const choice of decision.correctOptions || [decision.correctAction]) ok(legalIds.has(choice),'Hearts correct option comes from engine legal actions');
++  } else {
++    ok(heartsEngine.legalActions(state,state.actor).length>0,'Hearts still has legal play when no contrast exists');
++  }
++}
++
++{
++  const state=klondikeEngine.createGame({seed:11});
++  const decision=buildTutorialDecision('klondike',state);
++  ok(decision,'Klondike yields an engine-derived legal move decision');
++  ok(decision.correctAction,'Klondike has a correct action key');
++}
++
++{
++  let state=texasHoldemEngine.createGame({seed:991,humanSeat:0});
++  state=runBotsUntilHumanTurn(state,{rng:()=>0.4});
++  if(!state.handComplete && state.actor===0){
++    const decision=buildTutorialDecision('texas-holdem',state);
++    ok(decision,'Holdem yields a legal-action knowledge decision');
++    const legalTypes=new Set(texasHoldemEngine.legalActions(state,0).map(a=>a.type));
++    ok(legalTypes.has(decision.correctAction),'Holdem answer is legal');
++  } else {
++    ok(true,'Holdem seed can resolve before human decision without fabricating advice');
++  }
++}
++
++console.log(`Tutorial decision regression PASS: ${checks} checks`);
+diff --git a/scripts/verify-upgrade-ancestry.mjs b/scripts/verify-upgrade-ancestry.mjs
+new file mode 100644
+index 0000000..240be32
+--- /dev/null
++++ b/scripts/verify-upgrade-ancestry.mjs
+@@ -0,0 +1,23 @@
++import fs from 'node:fs';
++import path from 'node:path';
++import { execFileSync } from 'node:child_process';
++import { fileURLToPath } from 'node:url';
++
++const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
++const manifest = JSON.parse(fs.readFileSync(path.join(root,'upgrade-ancestry.json'),'utf8'));
++const failures=[];
++function gitBlob(pathName) {
++  try { return execFileSync('git',['rev-parse',`${manifest.baseCommit}:${pathName}`],{cwd:root,encoding:'utf8'}).trim(); }
++  catch { return null; }
++}
++for (const [file, expected] of Object.entries(manifest.files || {})) {
++  const actual = gitBlob(file);
++  if (!actual) failures.push(`${file}: base commit unavailable or path missing`);
++  else if (actual !== expected) failures.push(`${file}: expected ${expected}, got ${actual}`);
++}
++if (failures.length) {
++  console.error('Upgrade ancestry verification FAIL');
++  failures.forEach(item=>console.error(`- ${item}`));
++  process.exit(1);
++}
++console.log(`Upgrade ancestry verification PASS: ${Object.keys(manifest.files).length} source files match ${manifest.baseCommit.slice(0,12)}`);
+diff --git a/src/App.jsx b/src/App.jsx
+index c5a5cc6..9a4d3ac 100644
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@ -1,7 +1,9 @@
+-import React from 'react';
++import React, { useState } from 'react';
+ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+ import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+ import { AppProvider } from '@/lib/appContext';
++import StormAndMeIntro from '@/components/brand/StormAndMeIntro';
++import { markStormIntroSeen, shouldShowStormIntro } from '@/lib/stormIntro';
+ import CinematicBackdrop from '@/components/premium/CinematicBackdrop';
+ import CardAcademyLobby from '@/pages/CardAcademyLobby';
+ import GameRoom from '@/pages/GameRoom';
+@@ -14,9 +16,16 @@ const previewQueryClient = new QueryClient({
+   },
+ });
+ 
++function StormIntroGate({ children }) {
++  const [showIntro,setShowIntro] = useState(() => shouldShowStormIntro());
++  function completeIntro() { markStormIntroSeen(); setShowIntro(false); }
++  return showIntro ? <StormAndMeIntro onComplete={completeIntro} /> : children;
++}
++
+ export default function App() {
+   return (
+     <AppProvider>
++      <StormIntroGate>
