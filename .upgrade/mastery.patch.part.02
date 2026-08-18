@@ -1,0 +1,209 @@
+       <QueryClientProvider client={previewQueryClient}>
+         <HashRouter>
+           <CinematicBackdrop intensity="normal" className="text-scale-root">
+@@ -31,6 +40,7 @@ export default function App() {
+           </CinematicBackdrop>
+         </HashRouter>
+       </QueryClientProvider>
++      </StormIntroGate>
+     </AppProvider>
+   );
+ }
+diff --git a/src/card-academy-upgrades.css b/src/card-academy-upgrades.css
+new file mode 100644
+index 0000000..8da87b3
+--- /dev/null
++++ b/src/card-academy-upgrades.css
+@@ -0,0 +1,57 @@
++/* Storm And Me Studios signature intro */
++.hw-storm-intro{position:fixed;inset:0;z-index:1000;display:flex;min-height:100dvh;width:100%;align-items:center;justify-content:center;overflow:hidden;border:0;background:radial-gradient(circle at 50% 42%,#17233d 0%,#07101f 42%,#02050a 100%);color:#f8fafc;cursor:pointer;-webkit-tap-highlight-color:transparent}
++.hw-storm-intro-glow{position:absolute;inset:-20%;background:radial-gradient(circle at center,rgba(56,189,248,.18),transparent 38%);opacity:.8;transition:opacity .22s ease}
++.hw-storm-intro-mark{position:absolute;left:50%;top:50%;transform:translate(-50%,-115%);color:#e0f2fe;opacity:.28;filter:drop-shadow(0 0 28px rgba(125,211,252,.5));transition:transform .22s ease,opacity .22s ease}
++.hw-storm-intro-title{font-family:var(--font-heading,system-ui);font-size:clamp(1.65rem,7vw,3.8rem);font-weight:900;letter-spacing:.18em;text-indent:.18em;text-shadow:0 12px 40px rgba(0,0,0,.5)}
++.hw-storm-intro-studios{margin-top:.45rem;font-size:clamp(.68rem,2.5vw,1rem);font-weight:800;letter-spacing:.48em;text-indent:.48em;color:#7dd3fc}
++.hw-storm-intro-skip{margin-top:4rem;font-size:.68rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.34)}
++.hw-storm-intro-lightning{background:#f8fafc;color:#0f172a}
++.hw-storm-intro-lightning .hw-storm-intro-glow{opacity:1;background:radial-gradient(circle at center,rgba(255,255,255,.95),rgba(186,230,253,.82) 24%,transparent 62%)}
++.hw-storm-intro-lightning .hw-storm-intro-mark{opacity:1;transform:translate(-50%,-115%) scale(1.22);color:#0ea5e9}
++.hw-storm-intro-lightning .hw-storm-intro-studios{color:#0369a1}
++.hw-storm-intro-settle .hw-storm-intro-mark{opacity:.65;transform:translate(-50%,-115%) scale(1.06)}
++.reduce-motion .hw-storm-intro,.reduce-motion .hw-storm-intro *{transition:none!important;animation:none!important}
++
++/* Lighter premium Card Academy shell: pearl glass over soft sky/champagne. */
++.hw-academy-light{background:radial-gradient(circle at 8% 8%,rgba(125,211,252,.28),transparent 31%),radial-gradient(circle at 88% 12%,rgba(253,230,138,.34),transparent 28%),linear-gradient(160deg,#f8fbff 0%,#fffaf0 48%,#f1fbf8 100%);color:#0f172a}
++.hw-academy-light .hw-glass-1,.hw-academy-light .hw-glass-2,.hw-academy-light .hw-glass-3,.hw-academy-light .hw-glass-4,.hw-academy-light .hw-glass-5{background:linear-gradient(145deg,rgba(255,255,255,.86),rgba(248,250,252,.66));border-color:rgba(255,255,255,.88);box-shadow:0 18px 50px -34px rgba(15,23,42,.35),inset 0 1px rgba(255,255,255,.95);backdrop-filter:blur(18px)}
++.hw-academy-light .hw-glass-interactive:hover{border-color:rgba(14,165,233,.28);box-shadow:0 20px 54px -34px rgba(2,132,199,.38),inset 0 1px rgba(255,255,255,.98)}
++.hw-academy-light .hw-gold-border{border-color:rgba(180,130,28,.28)!important}
++.hw-academy-light .hw-gold-text{color:#99680b!important;text-shadow:none!important}
++.hw-academy-light .text-white{color:#0f172a!important}
++.hw-academy-light .text-white\/45{color:rgba(51,65,85,.58)!important}
++.hw-academy-light .text-white\/50{color:rgba(51,65,85,.62)!important}
++.hw-academy-light .text-white\/55{color:rgba(51,65,85,.66)!important}
++.hw-academy-light .text-white\/60{color:rgba(51,65,85,.7)!important}
++.hw-academy-light .text-white\/65{color:rgba(51,65,85,.74)!important}
++.hw-academy-light .text-white\/70{color:rgba(51,65,85,.78)!important}
++.hw-academy-light .border-white\/10{border-color:rgba(51,65,85,.11)!important}
++.hw-academy-light .bg-white\/5,.hw-academy-light .bg-white\/7{background:rgba(255,255,255,.58)!important}
++.hw-academy-light .bg-black\/10{background:rgba(255,255,255,.28)!important}
++.hw-academy-light .hw-tactile-depth{box-shadow:0 8px 22px -14px rgba(15,23,42,.28)}
++.hw-pearl-stat{background:linear-gradient(145deg,rgba(255,255,255,.92),rgba(248,250,252,.7));border:1px solid rgba(255,255,255,.95);box-shadow:0 14px 36px -26px rgba(15,23,42,.34),inset 0 1px rgba(255,255,255,1);backdrop-filter:blur(15px)}
++.hw-achievement-chip{background:linear-gradient(145deg,rgba(255,251,235,.96),rgba(240,253,250,.82));border:1px solid rgba(217,119,6,.12);box-shadow:0 12px 32px -26px rgba(15,23,42,.32)}
++.hw-feedback-toggle{border:1px solid rgba(14,116,144,.13)!important;background:rgba(255,255,255,.62)!important;color:#155e75!important}
++@media (max-width:430px){.hw-academy-light{padding-left:.65rem;padding-right:.65rem}.hw-pearl-stat{padding:.7rem}}
++
++.hw-summary-label{color:#64748b}
++.hw-summary-value{color:#0f172a}
++.hw-summary-accent{color:#047857}
++.hw-summary-progress{background:#e2e8f0}
++.hw-summary-progress-fill{background:linear-gradient(90deg,#22d3ee,#10b981)}
++.hw-achievement-title{color:#0f172a}
++.hw-achievement-muted{color:#64748b}
++.hw-achievement-icon{background:rgba(253,230,138,.72);color:#92400e}
++.hw-decision-panel{border:1px solid rgba(103,232,249,.18);background:rgba(207,250,254,.055)}
++.hw-decision-kicker{color:rgba(207,250,254,.72)}
++.hw-decision-question{color:#fff}
++.hw-decision-option{background:rgba(255,255,255,.07)!important;color:#fff!important;box-shadow:none!important}
++.hw-decision-correct{background:#86efac!important;color:#052e16!important}
++.hw-decision-wrong{background:#fda4af!important;color:#4c0519!important}
++.hw-decision-explanation{color:rgba(255,255,255,.65)}
++.hw-summary-top{grid-column:1/-1}
++.hw-mastery-caption{letter-spacing:.12em;color:#64748b}
++.hw-achievement-chip{min-width:190px}
++.hw-achievement-muted{line-height:1rem}
++.hw-inline-icon{margin-right:.375rem}
++
+diff --git a/src/components/academy/AchievementStrip.jsx b/src/components/academy/AchievementStrip.jsx
+new file mode 100644
+index 0000000..67ff918
+--- /dev/null
++++ b/src/components/academy/AchievementStrip.jsx
+@@ -0,0 +1,11 @@
++import React from 'react';
++import { Award } from 'lucide-react';
++import { recentUnlockedAchievements } from '@/lib/masteryPresentation';
++
++export default function AchievementStrip({ progress }) {
++  const unlocked = recentUnlockedAchievements(progress,4);
++  if (!unlocked.length) return <div className="hw-pearl-stat rounded-2xl p-3 text-sm hw-achievement-muted"><span className="font-black hw-achievement-title">Achievements are live.</span> Your first game, win, or tutorial can unlock one.</div>;
++  return <section aria-label="Recent achievements" className="flex gap-2 overflow-x-auto pb-1">
++    {unlocked.map(item=><article key={item.id} className="hw-achievement-chip rounded-2xl p-3"><div className="flex items-start gap-2"><span className="rounded-xl hw-achievement-icon p-2"><Award size={17}/></span><div><p className="text-sm font-black hw-achievement-title">{item.title}</p><p className="mt-1 text-[11px] hw-achievement-muted">{item.description}</p></div></div></article>)}
++  </section>;
++}
+diff --git a/src/components/academy/MasterySummary.jsx b/src/components/academy/MasterySummary.jsx
+new file mode 100644
+index 0000000..060e8e4
+--- /dev/null
++++ b/src/components/academy/MasterySummary.jsx
+@@ -0,0 +1,18 @@
++import React from 'react';
++import { BookOpen, Flame, Sparkles, Trophy } from 'lucide-react';
++import { CARD_ACADEMY_GAMES } from '@/games/catalog';
++import { buildMasterySummary } from '@/lib/masteryPresentation';
++
++export default function MasterySummary({ progress }) {
++  const summary = buildMasterySummary(progress,CARD_ACADEMY_GAMES);
++  const cards = [
++    { label:'Level', value:summary.level, icon:Sparkles },
++    { label:'XP', value:summary.totalXp, icon:Trophy },
++    { label:'Streak', value:`${summary.streakDays}d`, icon:Flame },
++    { label:'Tutorials', value:summary.tutorials, icon:BookOpen },
++  ];
++  return <section aria-label="Card mastery summary" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
++    {cards.map(({label,value,icon:Icon})=><div key={label} className="hw-pearl-stat rounded-2xl p-3"><p className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[.15em] hw-summary-label"><Icon size={12}/>{label}</p><p className="mt-1 text-xl font-black hw-summary-value">{value}</p></div>)}
++    {summary.topGame && <div className="hw-summary-top hw-pearl-stat rounded-2xl p-3"><div className="flex items-center justify-between gap-3"><div><p className="text-[9px] font-black uppercase tracking-[.15em] hw-summary-accent">Strongest table</p><p className="mt-1 font-heading text-base font-black hw-summary-value">{summary.topGame.title}</p></div><div className="text-right"><p className="text-2xl font-black hw-summary-accent">{summary.topGame.mastery}%</p><p className="hw-mastery-caption text-[9px] uppercase hw-summary-label">mastery</p></div></div><div className="mt-2 h-2 overflow-hidden rounded-full hw-summary-progress"><div className="h-full rounded-full hw-summary-progress-fill" style={{width:`${summary.topGame.mastery}%`}}/></div></div>}
++  </section>;
++}
+diff --git a/src/components/brand/StormAndMeIntro.jsx b/src/components/brand/StormAndMeIntro.jsx
+new file mode 100644
+index 0000000..d2fce2a
+--- /dev/null
++++ b/src/components/brand/StormAndMeIntro.jsx
+@@ -0,0 +1,44 @@
++import React, { useEffect, useRef, useState } from 'react';
++import { Zap } from 'lucide-react';
++import { useApp } from '@/lib/appContext';
++import { hapticPulse } from '@/lib/haptics';
++import { playSound } from '@/lib/sound';
++import { introDurationMs } from '@/lib/stormIntro';
++
++export default function StormAndMeIntro({ onComplete }) {
++  const { accessibility, settings } = useApp();
++  const [phase,setPhase] = useState('title');
++  const finished = useRef(false);
++  const reduced = Boolean(accessibility.reducedMotion);
++
++  function finish() {
++    if (finished.current) return;
++    finished.current = true;
++    onComplete?.();
++  }
++
++  useEffect(() => {
++    if (reduced) {
++      const timer = window.setTimeout(finish, introDurationMs({reducedMotion:true}));
++      return () => window.clearTimeout(timer);
++    }
++    const lightning = window.setTimeout(() => {
++      setPhase('lightning');
++      playSound('lightning',{enabled:settings.soundEffects !== false});
++      hapticPulse(accessibility.haptics, [28,36,18], 'warning');
++    }, 620);
++    const settle = window.setTimeout(() => setPhase('settle'), 900);
++    const done = window.setTimeout(finish, introDurationMs({reducedMotion:false}));
++    return () => { window.clearTimeout(lightning); window.clearTimeout(settle); window.clearTimeout(done); };
++  }, [reduced, accessibility.haptics, settings.soundEffects]);
++
++  return <button type="button" onClick={finish} aria-label="Skip Storm And Me Studios intro" className={`hw-storm-intro hw-storm-intro-${phase}`}>
++    <div className="hw-storm-intro-glow" aria-hidden="true" />
++    <div className="hw-storm-intro-mark" aria-hidden="true"><Zap size={48} strokeWidth={2.2}/></div>
++    <div className="relative z-10 text-center">
++      <p className="hw-storm-intro-title">STORM AND ME</p>
++      <p className="hw-storm-intro-studios">STUDIOS</p>
++      <p className="hw-storm-intro-skip">Tap to skip</p>
++    </div>
++  </button>;
++}
+diff --git a/src/components/games/BlackjackTable.jsx b/src/components/games/BlackjackTable.jsx
+index d2782a9..2b57cf3 100644
+--- a/src/components/games/BlackjackTable.jsx
++++ b/src/components/games/BlackjackTable.jsx
+@@ -52,9 +52,9 @@ export default function BlackjackTable({ game }) {
+   return <GameShell game={game} coachContext={{game:'Blackjack',facts:coachFacts}}>
+     <div className="mx-auto max-w-3xl">
+       <div className="mb-2 grid grid-cols-3 gap-2 text-center">
+-        <GlassSurface strength={2} className="rounded-xl p-2"><p className="text-[8px] font-black uppercase tracking-[.16em] text-white/42">Bankroll</p><p className="mt-1 flex items-center justify-center gap-1 text-sm font-black text-white"><CircleDollarSign size={13}/>{state.bankroll}</p></GlassSurface>
+-        <GlassSurface strength={2} className="rounded-xl p-2"><p className="text-[8px] font-black uppercase tracking-[.16em] text-white/42">Table</p><p className="mt-1 text-sm font-black hw-gold-text">6D · S17 · 3:2</p></GlassSurface>
+-        <GlassSurface strength={2} className="rounded-xl p-2"><p className="text-[8px] font-black uppercase tracking-[.16em] text-white/42">Shoe</p><p className="mt-1 text-sm font-black text-white">{state.shoe.length}</p></GlassSurface>
++        <GlassSurface strength={2} className="rounded-xl p-2"><p className="text-[8px] font-black uppercase tracking-[.16em] text-white/40">Bankroll</p><p className="mt-1 flex items-center justify-center gap-1 text-sm font-black text-white"><CircleDollarSign size={13}/>{state.bankroll}</p></GlassSurface>
++        <GlassSurface strength={2} className="rounded-xl p-2"><p className="text-[8px] font-black uppercase tracking-[.16em] text-white/40">Table</p><p className="mt-1 text-sm font-black hw-gold-text">6D · S17 · 3:2</p></GlassSurface>
++        <GlassSurface strength={2} className="rounded-xl p-2"><p className="text-[8px] font-black uppercase tracking-[.16em] text-white/40">Shoe</p><p className="mt-1 text-sm font-black text-white">{state.shoe.length}</p></GlassSurface>
+       </div>
+ 
+       <section className="hw-blackjack-felt min-h-[510px] rounded-[3rem] px-3 py-5 sm:rounded-[4.8rem] sm:px-6">
+@@ -72,19 +72,19 @@ export default function BlackjackTable({ game }) {
+           {state.hands.length ? state.hands.map((hand,index)=>{
+             const value=blackjackValue(hand.cards);
+             const active=state.phase==='player' && state.activeHand===index;
+-            return <GlassSurface key={index} strength={2} className={`rounded-2xl border p-3 ${active?'hw-blackjack-hand-active':'border-white/8'}`}>
++            return <GlassSurface key={index} strength={2} className={`rounded-2xl border p-3 ${active?'hw-blackjack-hand-active':'border-white/10'}`}>
+               <div className="mb-2 flex items-center justify-between gap-2"><p className="text-[10px] font-black uppercase tracking-[.13em] text-white/55">{handLabel(hand,index)}</p><div className="flex items-center gap-2"><span className="hw-blackjack-chip rounded-full px-2 py-1 text-[9px] font-black">BET {hand.wager}</span>{hand.result&&<span className={`rounded-full px-2 py-1 text-[9px] font-black uppercase ${['loss','bust'].includes(hand.result)?'hw-blackjack-bust':'bg-emerald-300/12 text-emerald-100'}`}>{resultLabel(hand.result)}</span>}</div></div>
+               <div className="flex min-h-[112px] flex-wrap items-center justify-center gap-2">{hand.cards.map((card,cardIndex)=><PlayingCard key={`${card.shoeCardId||card.id}-${cardIndex}`} card={card} />)}</div>
+               {value.blackjack && <p className="mt-2 text-center font-heading text-xl font-black hw-gold-text">BLACKJACK</p>}
+             </GlassSurface>;
+-          }) : <div className="flex min-h-[170px] items-center justify-center text-center"><div><p className="font-heading text-2xl font-black text-white">Blackjack</p><p className="mt-2 text-sm text-white/48">Set your bet and deal a full casino round.</p></div></div>}
++          }) : <div className="flex min-h-[170px] items-center justify-center text-center"><div><p className="font-heading text-2xl font-black text-white">Blackjack</p><p className="mt-2 text-sm text-white/50">Set your bet and deal a full casino round.</p></div></div>}
+         </div>
+       </section>
+ 
+       {state.phase==='bet' && <GlassSurface strength={4} goldEdge className="mt-3 rounded-[1.6rem] p-3">
+         <div className="flex items-center justify-between text-xs"><span className="font-bold text-white/65">Bet <strong className="ml-1 hw-gold-text">{state.bet}</strong></span><span className="text-white/40">Bankroll {state.bankroll}</span></div>
+         <input type="range" min="1" max={Math.max(1,state.bankroll)} step="5" value={Math.min(state.bet,Math.max(1,state.bankroll))} onChange={event=>apply({type:'set-bet',amount:Number(event.target.value)})} className="mt-2 h-9 w-full accent-amber-300" aria-label="Blackjack bet" />
+-        <div className="grid grid-cols-4 gap-2">{[10,25,50,100].map(amount=><TactilePressable key={amount} disabled={amount>state.bankroll} onClick={()=>apply({type:'set-bet',amount})} className={`rounded-xl py-2 text-xs font-black ${state.bet===amount?'bg-[hsl(var(--hw-gold))] text-[hsl(var(--hw-navy))]':'bg-white/6 text-white shadow-none'}`}>{amount}</TactilePressable>)}</div>
++        <div className="grid grid-cols-4 gap-2">{[10,25,50,100].map(amount=><TactilePressable key={amount} disabled={amount>state.bankroll} onClick={()=>apply({type:'set-bet',amount})} className={`rounded-xl py-2 text-xs font-black ${state.bet===amount?'bg-[hsl(var(--hw-gold))] text-[hsl(var(--hw-navy))]':'bg-white/5 text-white shadow-none'}`}>{amount}</TactilePressable>)}</div>
+         <TactilePressable disabled={!can('deal')} onClick={()=>apply({type:'deal'})} className="mt-3 w-full rounded-2xl bg-[hsl(var(--hw-gold))] px-4 py-3.5 text-lg font-black text-[hsl(var(--hw-navy))]">Deal</TactilePressable>
+       </GlassSurface>}
+ 
+@@ -94,7 +94,7 @@ export default function BlackjackTable({ game }) {
+       </GlassSurface>}
+ 
+       {state.phase==='player' && <GlassSurface strength={4} goldEdge className="mt-3 rounded-[1.6rem] p-3">
