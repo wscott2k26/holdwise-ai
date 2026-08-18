@@ -1,0 +1,273 @@
+           <div><p className="text-[9px] font-black uppercase tracking-[.18em] hw-gold-text">Pay Table</p><p className="mt-0.5 text-xs font-bold text-white">{variant.payTableName}</p></div><ChevronDown size={18} className={`text-white/60 transition-transform ${showPayTable?'rotate-180':''}`} />
+         </button>
+-        {showPayTable && <div className="mt-2 max-h-48 overflow-y-auto rounded-xl border border-white/6 bg-black/15">
++        {showPayTable && <div className="mt-2 max-h-48 overflow-y-auto rounded-xl border border-white/5 bg-black/15">
+           <div className="sticky top-0 grid grid-cols-[1.45fr_repeat(5,.55fr)] bg-[#071015]/95 px-2 py-1.5 text-[9px] font-black uppercase text-white/45"><span>Hand</span>{[1,2,3,4,5].map(c=><span key={c} className="text-center">{c}</span>)}</div>
+-          {payoutRows.map(([category,row])=><div key={category} className={`grid grid-cols-[1.45fr_repeat(5,.55fr)] border-t border-white/5 px-2 py-1.5 text-[10px] ${state.result?.category===category?'bg-amber-300/10 text-amber-100':'text-white/68'}`}><span className="font-bold">{LABELS[category]||category.replaceAll('_',' ')}</span>{row.map((p,index)=><span key={index} className="text-center tabular-nums">{p}</span>)}</div>)}
++          {payoutRows.map(([category,row])=><div key={category} className={`grid grid-cols-[1.45fr_repeat(5,.55fr)] border-t border-white/5 px-2 py-1.5 text-[10px] ${state.result?.category===category?'bg-amber-300/10 text-amber-100':'text-white/70'}`}><span className="font-bold">{LABELS[category]||category.replaceAll('_',' ')}</span>{row.map((p,index)=><span key={index} className="text-center tabular-nums">{p}</span>)}</div>)}
+         </div>}
+       </GlassSurface>
+ 
+@@ -79,7 +79,7 @@ export default function VideoPokerTable({ game }) {
+         </div>
+ 
+         <div className="mt-5 flex min-h-[132px] items-center justify-center gap-1 sm:gap-2">
+-          {state.hand.length ? state.hand.map((card,index)=><div key={`${state.handNumber}-${index}-${card.id}`} className={state.holdMask[index]?'hw-vp-held rounded-xl':''}><PlayingCard card={card} held={state.holdMask[index]} onClick={state.phase==='hold'?()=>apply({type:'toggle-hold',index}):undefined} /></div>) : Array.from({length:5},(_,index)=><div key={index} className="h-24 w-16 rounded-xl border border-white/8 bg-black/10 sm:h-28 sm:w-20" />)}
++          {state.hand.length ? state.hand.map((card,index)=><div key={`${state.handNumber}-${index}-${card.id}`} className={state.holdMask[index]?'hw-vp-held rounded-xl':''}><PlayingCard card={card} held={state.holdMask[index]} onClick={state.phase==='hold'?()=>apply({type:'toggle-hold',index}):undefined} /></div>) : Array.from({length:5},(_,index)=><div key={index} className="h-24 w-16 rounded-xl border border-white/10 bg-black/10 sm:h-28 sm:w-20" />)}
+         </div>
+ 
+         <div className="mt-3 min-h-14 text-center">
+@@ -98,12 +98,12 @@ export default function VideoPokerTable({ game }) {
+ 
+       {state.phase==='result' && <div className="mt-3"><TactilePressable onClick={()=>apply({type:'new-hand'})} className="w-full rounded-2xl bg-[hsl(var(--hw-gold))] px-4 py-3.5 text-base font-black text-[hsl(var(--hw-navy))]"><Sparkles size={18} className="mr-2 inline"/>New Hand</TactilePressable></div>}
+ 
+-      <div className="mt-3 flex items-center justify-between gap-3 px-1 text-[10px] text-white/38"><span className="flex items-center gap-1"><Trophy size={11}/>Authentic named Pay Table</span><span>Ask Coach Ace for strategy</span></div>
++      <div className="mt-3 flex items-center justify-between gap-3 px-1 text-[10px] text-white/40"><span className="flex items-center gap-1"><Trophy size={11}/>Authentic named Pay Table</span><span>Ask Coach Ace for strategy</span></div>
+     </div>
+   </GameShell>;
+ }
+ 
+ function MotionResult({result}) {
+   if(!result) return null;
+-  return <div className="rounded-2xl border border-white/8 bg-black/15 p-2.5"><p className={`font-heading text-xl font-black ${result.payout>0?'hw-vp-win':'hw-vp-danger'}`}>{result.name}</p><p className="mt-1 text-xs text-white/55">{result.payout>0?`Paid ${result.payout} credits · Net ${result.net>=0?'+':''}${result.net}`:'No payout this hand'}</p></div>;
++  return <div className="rounded-2xl border border-white/10 bg-black/15 p-2.5"><p className={`font-heading text-xl font-black ${result.payout>0?'hw-vp-win':'hw-vp-danger'}`}>{result.name}</p><p className="mt-1 text-xs text-white/55">{result.payout>0?`Paid ${result.payout} credits · Net ${result.net>=0?'+':''}${result.net}`:'No payout this hand'}</p></div>;
+ }
+diff --git a/src/components/premium/TactilePressable.jsx b/src/components/premium/TactilePressable.jsx
+index 67bd71e..2722943 100644
+--- a/src/components/premium/TactilePressable.jsx
++++ b/src/components/premium/TactilePressable.jsx
+@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
+ import { cn } from "@/lib/utils";
+ import { useApp } from "@/lib/appContext";
+ import { hapticPulse } from "@/lib/haptics";
++import { playSound } from "@/lib/sound";
+ 
+ export default function TactilePressable({
+   children,
+@@ -14,12 +15,13 @@ export default function TactilePressable({
+   type = "button",
+   ...props
+ }) {
+-  const { accessibility } = useApp();
++  const { accessibility, settings } = useApp();
+   const reduced = accessibility.reducedMotion;
+ 
+   function handleClick(event) {
+     if (disabled) return;
+     hapticPulse(accessibility.haptics, hapticPattern, hapticType);
++    playSound("button", { enabled: settings.soundEffects !== false });
+     onClick?.(event);
+   }
+ 
+diff --git a/src/lib/achievements.js b/src/lib/achievements.js
+new file mode 100644
+index 0000000..464f80f
+--- /dev/null
++++ b/src/lib/achievements.js
+@@ -0,0 +1,76 @@
++const POKER_GAMES = new Set([
++  'texas-holdem', 'jacks-or-better', 'bonus-poker', 'double-bonus-poker',
++  'double-double-bonus-poker', 'deuces-wild', 'joker-poker',
++]);
++const SOLITAIRE_GAMES = new Set(['klondike', 'spider', 'freecell', 'tripeaks', 'pyramid']);
++const CLASSIC_GAMES = new Set(['spades', 'hearts', 'gin-rummy']);
++const FAMILY_GAMES = new Set(['crazy-eights', 'go-fish', 'war', 'speed', 'color-clash']);
++
++function rows(progress) {
++  return Object.entries(progress?.games || {});
++}
++function totalPlays(progress) {
++  return rows(progress).reduce((sum, [, game]) => sum + Number(game?.plays || 0), 0);
++}
++function totalWins(progress) {
++  return rows(progress).reduce((sum, [, game]) => sum + Number(game?.wins || 0), 0);
++}
++function tutorialCount(progress) {
++  return rows(progress).filter(([, game]) => Boolean(game?.tutorialComplete)).length;
++}
++function playedDistinct(progress, set = null) {
++  return rows(progress).filter(([id, game]) => (!set || set.has(id)) && Number(game?.plays || 0) > 0).length;
++}
++function totalDecisions(progress) {
++  return rows(progress).reduce((sum, [, game]) => sum + Number(game?.totalDecisions || 0), 0);
++}
++function correctDecisions(progress) {
++  return rows(progress).reduce((sum, [, game]) => sum + Number(game?.correctDecisions || 0), 0);
++}
++function anyGame(progress, predicate) {
++  return rows(progress).some(([id, game]) => predicate(game || {}, id));
++}
++function winsAcross(progress, set) {
++  return rows(progress).reduce((sum, [id, game]) => sum + (set.has(id) ? Number(game?.wins || 0) : 0), 0);
++}
++
++export const ACHIEVEMENTS = [
++  { id:'first-game', title:'First Deal', description:'Complete your first Card Academy game.', test:p=>totalPlays(p)>=1 },
++  { id:'first-win', title:'First Table Win', description:'Win your first complete game.', test:p=>totalWins(p)>=1 },
++  { id:'first-tutorial', title:'Lesson One', description:'Complete your first guided tutorial.', test:p=>tutorialCount(p)>=1 },
++  { id:'blackjack-scholar', title:'Blackjack Scholar', description:'Graduate from the Blackjack tutorial.', test:p=>Boolean(p.games?.blackjack?.tutorialComplete) },
++  { id:'holdem-student', title:'Hold’em Student', description:'Graduate from the Texas Hold’em tutorial.', test:p=>Boolean(p.games?.['texas-holdem']?.tutorialComplete) },
++  { id:'spades-strategist', title:'Spades Strategist', description:'Win three games of Spades.', test:p=>Number(p.games?.spades?.wins||0)>=3 },
++  { id:'heartbreaker', title:'Heartbreaker', description:'Win a complete game of Hearts.', test:p=>Number(p.games?.hearts?.wins||0)>=1 },
++  { id:'solitaire-solver', title:'Solitaire Solver', description:'Win any Solitaire-family game.', test:p=>winsAcross(p,SOLITAIRE_GAMES)>=1 },
++  { id:'perfect-ten', title:'Perfect Ten', description:'Make ten correct coached decisions in a row.', test:p=>anyGame(p,g=>Number(g.bestDecisionStreak||0)>=10) },
++  { id:'seven-day-streak', title:'Seven-Day Streak', description:'Learn or play on seven consecutive days.', test:p=>Number(p.streak?.days||0)>=7 },
++  { id:'five-game-explorer', title:'Five-Game Explorer', description:'Play five different Card Academy games.', test:p=>playedDistinct(p)>=5 },
++  { id:'poker-tour', title:'Poker Tour', description:'Play three different Poker-family games.', test:p=>playedDistinct(p,POKER_GAMES)>=3 },
++  { id:'solitaire-explorer', title:'Solitaire Explorer', description:'Play three different Solitaire-family games.', test:p=>playedDistinct(p,SOLITAIRE_GAMES)>=3 },
++  { id:'classic-regular', title:'Classic Regular', description:'Complete ten games across Spades, Hearts, and Gin Rummy.', test:p=>rows(p).reduce((s,[id,g])=>s+(CLASSIC_GAMES.has(id)?Number(g?.plays||0):0),0)>=10 },
++  { id:'family-night', title:'Family Night', description:'Play three different Family-table games.', test:p=>playedDistinct(p,FAMILY_GAMES)>=3 },
++  { id:'academy-graduate', title:'Academy Graduate', description:'Complete tutorials for five different games.', test:p=>tutorialCount(p)>=5 },
++  { id:'table-hopper', title:'Table Hopper', description:'Play ten different games in the Academy.', test:p=>playedDistinct(p)>=10 },
++  { id:'hundred-decisions', title:'Hundred Decisions', description:'Make one hundred coached decisions.', test:p=>totalDecisions(p)>=100 },
++  { id:'sharp-reader', title:'Sharp Reader', description:'Make at least fifty correct coached decisions.', test:p=>correctDecisions(p)>=50 },
++  { id:'cardwise-master', title:'CardWise Master', description:'Earn 5,000 Card Academy XP and complete five tutorials.', test:p=>Number(p.totalXp||0)>=5000 && tutorialCount(p)>=5 },
++];
++
++export const ACHIEVEMENT_BY_ID = Object.fromEntries(ACHIEVEMENTS.map(item => [item.id, item]));
++
++export function evaluateAchievements(progress, at = new Date().toISOString()) {
++  const existing = { ...(progress?.achievements || {}) };
++  const newlyUnlocked = [];
++  for (const achievement of ACHIEVEMENTS) {
++    if (existing[achievement.id]) continue;
++    if (achievement.test(progress)) {
++      existing[achievement.id] = at;
++      newlyUnlocked.push(achievement.id);
++    }
++  }
++  return {
++    progress: { ...progress, achievements: existing },
++    newlyUnlocked,
++  };
++}
+diff --git a/src/lib/appContext.jsx b/src/lib/appContext.jsx
+index fa1e9d1..5105886 100644
+--- a/src/lib/appContext.jsx
++++ b/src/lib/appContext.jsx
+@@ -36,6 +36,7 @@ const defaultAccessibility = {
+ const defaultSettings = {
+   voiceEnabled: "ask-later", // enabled | text-only | ask-later
+   theme: "dark",
++  soundEffects: true,
+   mascot: "ace", // mascot id | "none"
+   notifications: {
+     dailyLesson: true,
+@@ -71,8 +72,8 @@ const AppContext = createContext(null);
+ export function AppProvider({ children }) {
+   const persisted = loadState();
+   const [profile, setProfile] = useState(persisted?.profile || defaultProfile);
+-  const [accessibility, setAccessibility] = useState(persisted?.accessibility || defaultAccessibility);
+-  const [settings, setSettings] = useState(persisted?.settings || defaultSettings);
++  const [accessibility, setAccessibility] = useState({ ...defaultAccessibility, ...(persisted?.accessibility || {}) });
++  const [settings, setSettings] = useState({ ...defaultSettings, ...(persisted?.settings || {}), notifications: { ...defaultSettings.notifications, ...(persisted?.settings?.notifications || {}) } });
+   const [premium, setPremium] = useState({ status: "free", platform: null, productId: null, verified: false });
+   const [coachUsage, setCoachUsage] = useState(() => {
+     const saved = persisted?.coachUsage;
+diff --git a/src/lib/cardAcademyProgress.js b/src/lib/cardAcademyProgress.js
+index 9d9bea9..a87fd7e 100644
+--- a/src/lib/cardAcademyProgress.js
++++ b/src/lib/cardAcademyProgress.js
+@@ -1,14 +1,219 @@
+-export const CARD_ACADEMY_PROGRESS_KEY='holdwise_card_academy_progress_v1';
+-const empty=()=>({games:{},families:{},recentGames:[],totalXp:0});
+-function normalized(raw){ return raw&&typeof raw==='object'?{...empty(),...raw,games:{...(raw.games||{})},families:{...(raw.families||{})},recentGames:Array.isArray(raw.recentGames)?raw.recentGames:[]}:empty(); }
+-export function loadCardAcademyProgress(storage=globalThis.localStorage){ if(!storage)return empty(); try{return normalized(JSON.parse(storage.getItem(CARD_ACADEMY_PROGRESS_KEY)||'null'));}catch{return empty();} }
+-function save(p,storage){ storage?.setItem(CARD_ACADEMY_PROGRESS_KEY,JSON.stringify(p)); return p; }
+-function gameRow(p,id){ return p.games[id]||{plays:0,wins:0,tutorialComplete:false,xp:0}; }
+-function familyRow(p,id){ return p.families[id]||{plays:0,wins:0,tutorials:0,xp:0}; }
+-function touchRecent(p,id){ p.recentGames=[id,...p.recentGames.filter(x=>x!==id)].slice(0,8); }
+-export function markTutorialComplete(gameId,{family='other',xp=100}={},storage=globalThis.localStorage,at=new Date().toISOString()){
+-  const p=loadCardAcademyProgress(storage), g=gameRow(p,gameId), f=familyRow(p,family); const first=!g.tutorialComplete; p.games[gameId]={...g,tutorialComplete:true,tutorialCompletedAt:g.tutorialCompletedAt||at,xp:g.xp+(first?xp:0)}; if(first){f.tutorials+=1;f.xp+=xp;p.totalXp+=xp;} p.families[family]=f; touchRecent(p,gameId); return save(p,storage);
+-}
+-export function recordGameResult(gameId,{family='other',won=false,xp=0}={},storage=globalThis.localStorage,at=new Date().toISOString()){
+-  const p=loadCardAcademyProgress(storage),g=gameRow(p,gameId),f=familyRow(p,family); p.games[gameId]={...g,plays:g.plays+1,wins:g.wins+(won?1:0),xp:g.xp+xp,lastPlayedAt:at}; f.plays+=1;f.wins+=won?1:0;f.xp+=xp;p.families[family]=f;p.totalXp+=xp;touchRecent(p,gameId);return save(p,storage);
++import { evaluateAchievements } from './achievements.js';
++
++export const CARD_ACADEMY_PROGRESS_KEY = 'holdwise_card_academy_progress_v1';
++export const CARD_ACADEMY_SCHEMA_VERSION = 2;
++
++const empty = () => ({
++  schemaVersion: CARD_ACADEMY_SCHEMA_VERSION,
++  games: {},
++  families: {},
++  recentGames: [],
++  totalXp: 0,
++  achievements: {},
++  streak: { days: 0, lastActiveDate: null },
++  dailyRewards: {},
++});
++
++function normalizeGameRow(row = {}) {
++  const totalDecisions = Math.max(0, Number(row.totalDecisions || 0));
++  const correctDecisions = Math.max(0, Math.min(totalDecisions, Number(row.correctDecisions || 0)));
++  const accuracyScore = totalDecisions > 0 ? Math.round((correctDecisions / totalDecisions) * 100) : 0;
++  return {
++    plays: Math.max(0, Number(row.plays || 0)),
++    wins: Math.max(0, Number(row.wins || 0)),
++    tutorialComplete: Boolean(row.tutorialComplete),
++    xp: Math.max(0, Number(row.xp || 0)),
++    correctDecisions,
++    totalDecisions,
++    accuracyScore,
++    currentDecisionStreak: Math.max(0, Number(row.currentDecisionStreak || 0)),
++    bestDecisionStreak: Math.max(0, Number(row.bestDecisionStreak || 0)),
++    ...(row.tutorialCompletedAt ? { tutorialCompletedAt: row.tutorialCompletedAt } : {}),
++    ...(row.lastPlayedAt ? { lastPlayedAt: row.lastPlayedAt } : {}),
++    ...(row.lastDecisionAt ? { lastDecisionAt: row.lastDecisionAt } : {}),
++  };
++}
++
++function normalizeFamilyRow(row = {}) {
++  return {
++    plays: Math.max(0, Number(row.plays || 0)),
++    wins: Math.max(0, Number(row.wins || 0)),
++    tutorials: Math.max(0, Number(row.tutorials || 0)),
++    xp: Math.max(0, Number(row.xp || 0)),
++  };
++}
++
++function normalized(raw) {
++  if (!raw || typeof raw !== 'object') return empty();
++  const games = Object.fromEntries(Object.entries(raw.games || {}).map(([id, row]) => [id, normalizeGameRow(row)]));
++  const families = Object.fromEntries(Object.entries(raw.families || {}).map(([id, row]) => [id, normalizeFamilyRow(row)]));
++  const achievements = raw.achievements && typeof raw.achievements === 'object' && !Array.isArray(raw.achievements)
++    ? { ...raw.achievements }
++    : Object.fromEntries((Array.isArray(raw.achievements) ? raw.achievements : []).map(id => [id, raw.updatedAt || new Date(0).toISOString()]));
++  const streak = raw.streak && typeof raw.streak === 'object'
++    ? { days: Math.max(0, Number(raw.streak.days || 0)), lastActiveDate: raw.streak.lastActiveDate || null }
++    : { days: Math.max(0, Number(raw.streakDays || 0)), lastActiveDate: raw.lastPlayedDate || null };
++  return {
++    ...empty(),
++    ...raw,
++    schemaVersion: CARD_ACADEMY_SCHEMA_VERSION,
++    games,
++    families,
++    recentGames: Array.isArray(raw.recentGames) ? [...new Set(raw.recentGames.filter(Boolean))].slice(0, 8) : [],
++    totalXp: Math.max(0, Number(raw.totalXp || 0)),
++    achievements,
++    streak,
++    dailyRewards: raw.dailyRewards && typeof raw.dailyRewards === 'object' ? { ...raw.dailyRewards } : {},
++  };
++}
++
++export function loadCardAcademyProgress(storage = globalThis.localStorage) {
++  if (!storage) return empty();
++  try {
++    return normalized(JSON.parse(storage.getItem(CARD_ACADEMY_PROGRESS_KEY) || 'null'));
++  } catch {
++    return empty();
++  }
++
++function save(progress, storage) {
++  storage?.setItem(CARD_ACADEMY_PROGRESS_KEY, JSON.stringify(progress));
++  return progress;
++}
++
++function gameRow(progress, id) {
++  return normalizeGameRow(progress.games[id]);
++}
++function familyRow(progress, id) {
++  return normalizeFamilyRow(progress.families[id]);
++}
++function touchRecent(progress, id) {
