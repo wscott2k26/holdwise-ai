@@ -1,0 +1,398 @@
++  progress.recentGames = [id, ...progress.recentGames.filter(value => value !== id)].slice(0, 8);
++}
++function pad2(value) {
++  return String(value).padStart(2, '0');
++}
++function localDateKey(at = new Date()) {
++  const date = at instanceof Date ? at : new Date(at);
++  if (Number.isNaN(date.getTime())) return String(at).slice(0, 10);
++  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
++}
++function previousDateKey(dateKey) {
++  const [year, month, day] = dateKey.split('-').map(Number);
++  const date = new Date(year, month - 1, day);
++  date.setDate(date.getDate() - 1);
++  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
++}
++function touchStreakByDate(progress, dateKey) {
++  const current = progress.streak || { days: 0, lastActiveDate: null };
++  if (current.lastActiveDate === dateKey) return;
++  progress.streak = {
++    days: current.lastActiveDate === previousDateKey(dateKey) ? current.days + 1 : 1,
++    lastActiveDate: dateKey,
++  };
++}
++function touchStreak(progress, at) {
++  touchStreakByDate(progress, localDateKey(at));
++}
++function finalize(progress, storage, at = new Date().toISOString()) {
++  const { progress: withAchievements, newlyUnlocked } = evaluateAchievements(progress, typeof at === 'string' ? at : at.toISOString());
++  withAchievements.lastAchievementUnlocks = newlyUnlocked;
++  return save(withAchievements, storage);
++}
++
++export function deriveOverallLevel(totalXp = 0) {
++  return Math.max(1, Math.floor(Math.max(0, Number(totalXp || 0)) / 500) + 1);
++}
++
++export function deriveGameMastery(row = {}) {
++  const game = normalizeGameRow(row);
++  const tutorial = game.tutorialComplete ? 20 : 0;
++  const playExperience = Math.min(20, game.plays * 2);
++  const wins = Math.min(20, game.wins * 4);
++  const accuracy = game.totalDecisions > 0 ? (game.correctDecisions / game.totalDecisions) * 25 : 0;
++  const xp = Math.min(15, game.xp / 50);
++  return Math.max(0, Math.min(100, Math.round(tutorial + playExperience + wins + accuracy + xp)));
++}
++
++export function markTutorialComplete(gameId, { family = 'other', xp = 100 } = {}, storage = globalThis.localStorage, at = new Date()) {
++  const progress = loadCardAcademyProgress(storage);
++  const game = gameRow(progress, gameId);
++  const familyState = familyRow(progress, family);
++  const first = !game.tutorialComplete;
++  progress.games[gameId] = {
++    ...game,
++    tutorialComplete: true,
++    tutorialCompletedAt: game.tutorialCompletedAt || (at instanceof Date ? at.toISOString() : at),
++    xp: game.xp + (first ? xp : 0),
++  };
++  if (first) {
++    familyState.tutorials += 1;
++    familyState.xp += xp;
++    progress.totalXp += xp;
++  }
++  progress.families[family] = familyState;
++  touchRecent(progress, gameId);
++  touchStreak(progress, at);
++  return finalize(progress, storage, at);
++}
++
++export function recordGameResult(gameId, { family = 'other', won = false, xp = 0 } = {}, storage = globalThis.localStorage, at = new Date()) {
++  const progress = loadCardAcademyProgress(storage);
++  const game = gameRow(progress, gameId);
++  const familyState = familyRow(progress, family);
++  const timestamp = at instanceof Date ? at.toISOString() : at;
++  progress.games[gameId] = {
++    ...game,
++    plays: game.plays + 1,
++    wins: game.wins + (won ? 1 : 0),
++    xp: game.xp + xp,
++    lastPlayedAt: timestamp,
++  };
++  familyState.plays += 1;
++  familyState.wins += won ? 1 : 0;
++  familyState.xp += xp;
++  progress.families[family] = familyState;
++  progress.totalXp += xp;
++  touchRecent(progress, gameId);
++  touchStreak(progress, at);
++  return finalize(progress, storage, at);
++}
++
++export function recordCoachDecision(gameId, { family = 'other', correct = false, xp = 0 } = {}, storage = globalThis.localStorage, at = new Date()) {
++  const progress = loadCardAcademyProgress(storage);
++  const game = gameRow(progress, gameId);
++  const familyState = familyRow(progress, family);
++  const currentDecisionStreak = correct ? game.currentDecisionStreak + 1 : 0;
++  const totalDecisions = game.totalDecisions + 1;
++  const correctDecisions = game.correctDecisions + (correct ? 1 : 0);
++  progress.games[gameId] = {
++    ...game,
++    xp: game.xp + xp,
++    totalDecisions,
++    correctDecisions,
++    accuracyScore: Math.round((correctDecisions / totalDecisions) * 100),
++    currentDecisionStreak,
++    bestDecisionStreak: Math.max(game.bestDecisionStreak, currentDecisionStreak),
++    lastDecisionAt: at instanceof Date ? at.toISOString() : at,
++  };
++  familyState.xp += xp;
++  progress.families[family] = familyState;
++  progress.totalXp += xp;
++  touchRecent(progress, gameId);
++  touchStreak(progress, at);
++  return finalize(progress, storage, at);
++}
++
++export function recordDailyChallengeCompletion({ date = localDateKey(), score = 0, total = 0, xp = 0 } = {}, storage = globalThis.localStorage) {
++  const progress = loadCardAcademyProgress(storage);
++  if (progress.dailyRewards[date]) return progress;
++  progress.dailyRewards[date] = {
++    score: Math.max(0, Number(score || 0)),
++    total: Math.max(0, Number(total || 0)),
++    xp: Math.max(0, Number(xp || 0)),
++    completedAt: new Date().toISOString(),
++  };
++  progress.totalXp += Math.max(0, Number(xp || 0));
++  touchStreakByDate(progress, date);
++  return finalize(progress, storage, `${date}T12:00:00`);
+ }
+diff --git a/src/lib/masteryPresentation.js b/src/lib/masteryPresentation.js
+new file mode 100644
+index 0000000..eb4810b
+--- /dev/null
++++ b/src/lib/masteryPresentation.js
+@@ -0,0 +1,23 @@
++import { ACHIEVEMENT_BY_ID } from './achievements.js';
++import { deriveGameMastery, deriveOverallLevel } from './cardAcademyProgress.js';
++
++export function buildMasterySummary(progress = {}, catalog = []) {
++  const games = progress.games || {};
++  const ranked = catalog.map(game => ({ ...game, mastery: deriveGameMastery(games[game.id] || {}) })).sort((a,b)=>b.mastery-a.mastery);
++  return {
++    level: deriveOverallLevel(progress.totalXp || 0),
++    totalXp: Number(progress.totalXp || 0),
++    streakDays: Number(progress.streak?.days || 0),
++    tutorials: Object.values(games).filter(row=>row?.tutorialComplete).length,
++    topGame: ranked.find(item=>item.mastery>0) || null,
++    averageMastery: ranked.length ? Math.round(ranked.reduce((sum,item)=>sum+item.mastery,0)/ranked.length) : 0,
++  };
++}
++
++export function recentUnlockedAchievements(progress = {}, limit = 4) {
++  return Object.entries(progress.achievements || {})
++    .map(([id, unlockedAt]) => ({ ...ACHIEVEMENT_BY_ID[id], id, unlockedAt }))
++    .filter(item => item.title)
++    .sort((a,b)=>String(b.unlockedAt).localeCompare(String(a.unlockedAt)))
++    .slice(0, Math.max(0, limit));
++}
+diff --git a/src/lib/sound.js b/src/lib/sound.js
+new file mode 100644
+index 0000000..3731182
+--- /dev/null
++++ b/src/lib/sound.js
+@@ -0,0 +1,74 @@
++export const SOUND_NAMES = ['button','deal','flip','slide','correct','incorrect','achievement','levelUp','win','loss','lightning'];
++let contexts = new Map();
++
++function contextFor(scope) {
++  const AudioContextClass = scope?.AudioContext || scope?.webkitAudioContext;
++  if (!AudioContextClass) return null;
++  let context = contexts.get(scope);
++  if (!context) {
++    context = new AudioContextClass();
++    contexts.set(scope, context);
++  }
++  if (context.state === 'suspended' && typeof context.resume === 'function') context.resume();
++  return context;
++}
++
++function tone(context, { start = 320, end = start, duration = 0.07, gain = 0.07, type = 'sine', offset = 0 } = {}) {
++  const now = context.currentTime + offset;
++  const oscillator = context.createOscillator();
++  const amp = context.createGain();
++  oscillator.type = type;
++  oscillator.frequency.setValueAtTime(Math.max(20, start), now);
++  if (end !== start) oscillator.frequency.exponentialRampToValueAtTime(Math.max(20, end), now + duration);
++  amp.gain.setValueAtTime(Math.max(0.0001, gain), now);
++  amp.gain.exponentialRampToValueAtTime(0.0001, now + duration);
++  oscillator.connect(amp);
++  amp.connect(context.destination);
++  oscillator.start(now);
++  oscillator.stop(now + duration + 0.01);
++}
++
++function renderCue(context, name) {
++  switch (name) {
++    case 'button': tone(context,{start:480,end:390,duration:0.045,gain:0.045,type:'triangle'}); break;
++    case 'deal': tone(context,{start:210,end:120,duration:0.06,gain:0.045,type:'triangle'}); break;
++    case 'flip': tone(context,{start:520,end:240,duration:0.055,gain:0.05,type:'square'}); break;
++    case 'slide': tone(context,{start:260,end:150,duration:0.08,gain:0.04,type:'sine'}); break;
++    case 'correct':
++      tone(context,{start:523.25,end:659.25,duration:0.11,gain:0.06,type:'sine'});
++      tone(context,{start:659.25,end:783.99,duration:0.12,gain:0.055,type:'sine',offset:0.09});
++      break;
++    case 'incorrect': tone(context,{start:220,end:145,duration:0.16,gain:0.055,type:'triangle'}); break;
++    case 'achievement':
++      tone(context,{start:523.25,end:659.25,duration:0.11,gain:0.07,type:'sine'});
++      tone(context,{start:659.25,end:987.77,duration:0.16,gain:0.065,type:'sine',offset:0.1});
++      break;
++    case 'levelUp': tone(context,{start:392,end:1046.5,duration:0.32,gain:0.065,type:'triangle'}); break;
++    case 'win':
++      tone(context,{start:392,end:523.25,duration:0.14,gain:0.065,type:'sine'});
++      tone(context,{start:523.25,end:783.99,duration:0.18,gain:0.06,type:'sine',offset:0.12});
++      break;
++    case 'loss': tone(context,{start:330,end:110,duration:0.28,gain:0.055,type:'triangle'}); break;
++    case 'lightning':
++      tone(context,{start:130,end:38,duration:0.36,gain:0.09,type:'sawtooth'});
++      tone(context,{start:2100,end:260,duration:0.09,gain:0.035,type:'square',offset:0.015});
++      break;
++    default: return false;
++  }
++  return true;
++}
++
++export function playSound(name, { enabled = true, scope = globalThis } = {}) {
++  if (!enabled || !SOUND_NAMES.includes(name)) return false;
++  try {
++    const context = contextFor(scope);
++    if (!context) return false;
++    return renderCue(context, name);
++  } catch {
++    return false;
++  }
++}
++
++export function resetSoundForTests() {
++  contexts = new Map();
++}
+diff --git a/src/lib/stormIntro.js b/src/lib/stormIntro.js
+new file mode 100644
+index 0000000..99911c1
+--- /dev/null
++++ b/src/lib/stormIntro.js
+@@ -0,0 +1,8 @@
++export const STORM_INTRO_SESSION_KEY = 'holdwise_storm_and_me_intro_seen_v1';
++export function introDurationMs({ reducedMotion = false } = {}) { return reducedMotion ? 320 : 2100; }
++export function shouldShowStormIntro(storage = globalThis.sessionStorage) {
++  try { return storage?.getItem?.(STORM_INTRO_SESSION_KEY) !== '1'; } catch { return true; }
++}
++export function markStormIntroSeen(storage = globalThis.sessionStorage) {
++  try { storage?.setItem?.(STORM_INTRO_SESSION_KEY, '1'); } catch {}
++}
+diff --git a/src/lib/tutorialDecisions.js b/src/lib/tutorialDecisions.js
+new file mode 100644
+index 0000000..ce9eafb
+--- /dev/null
++++ b/src/lib/tutorialDecisions.js
+@@ -0,0 +1,152 @@
++import { basicStrategyAdvice, blackjackEngine } from '../games/engines/blackjack.js';
++import { texasHoldemEngine } from '../games/engines/texasHoldem.js';
++import { spadesEngine } from '../games/engines/spades.js';
++import { heartsEngine } from '../games/engines/hearts.js';
++import { klondikeEngine } from '../games/engines/klondike.js';
++
++const ACTION_LABELS = {
++  hit:'Hit', stand:'Stand', split:'Split', double:'Double',
++  'take-insurance':'Take insurance', 'decline-insurance':'Decline insurance',
++  fold:'Fold', check:'Check', call:'Call', bet:'Bet', raise:'Raise', 'all-in':'All in',
++  'draw-stock':'Draw from stock', 'recycle-stock':'Recycle waste to stock',
++  'waste-to-foundation':'Move waste to foundation', 'waste-to-tableau':'Move waste to tableau',
++  'tableau-to-foundation':'Move tableau card to foundation', 'move-tableau':'Move tableau run',
++  'foundation-to-tableau':'Return foundation card to tableau', undo:'Undo',
++};
++
++function option(value, label = ACTION_LABELS[value] || String(value).replaceAll('-', ' ')) {
++  return { value, label };
++}
++function uniqueOptions(items) {
++  const seen = new Set();
++  return items.filter(item => item && !seen.has(item.value) && seen.add(item.value));
++}
++function actorFor(state) {
++  if (Number.isInteger(state?.actor)) return state.actor;
++  if (Number.isInteger(state?.humanSeat)) return state.humanSeat;
++  if (Number.isInteger(state?.config?.humanSeat)) return state.config.humanSeat;
++  return 0;
++}
++function cardOption(card) {
++  return option(card.id, card.label || `${card.rank} of ${card.suit}`);
++}
++function cardContrastDecision({ gameName, state, engine, ruleText }) {
++  const actor = actorFor(state);
++  const hand = state?.players?.[actor]?.hand || [];
++  const legal = engine.legalActions(state, actor).filter(action => action.type === 'play');
++  if (!legal.length) return null;
++  const legalIds = new Set(legal.map(action => action.cardId));
++  const illegalCards = hand.filter(card => !legalIds.has(card.id));
++  if (!illegalCards.length) return null;
++  const legalCards = hand.filter(card => legalIds.has(card.id)).slice(0, 2);
++  const choices = uniqueOptions([...legalCards.map(cardOption), ...illegalCards.slice(0, 2).map(cardOption)]).slice(0, 4);
++  return {
++    kind: 'card-legality',
++    prompt: `Which card is legal to play right now in ${gameName}?`,
++    options: choices,
++    correctAction: legalCards[0]?.id || legal[0].cardId,
++    correctOptions: choices.filter(item => legalIds.has(item.value)).map(item => item.value),
++    explanation: ruleText,
++  };
++}
++
++export function buildTutorialDecision(gameId, state) {
++  if (!state) return null;
++
++  if (gameId === 'blackjack') {
++    const legal = blackjackEngine.legalActions(state);
++    if (!legal.length) return null;
++    const advice = basicStrategyAdvice(state);
++    if (!advice || !legal.some(action => action.type === advice.action)) return null;
++    const meaningful = legal.filter(action => !['set-bet', 'deal', 'new-round'].includes(action.type));
++    if (!meaningful.length) return null;
++    return {
++      kind: 'action-choice',
++      prompt: state.phase === 'insurance' ? 'What is the default basic-strategy insurance decision?' : 'What does HoldWise Coach recommend for this hand?',
++      options: meaningful.map(action => option(action.type)),
++      correctAction: advice.action,
++      explanation: advice.reason,
++    };
++  }
++
++  if (gameId === 'texas-holdem') {
++    const actor = actorFor(state);
++    const legal = texasHoldemEngine.legalActions(state, actor);
++    if (!legal.length) return null;
++    const legalTypes = [...new Set(legal.map(action => action.type))];
++    // This is deliberately a rules/legality question, not a claim of poker EV optimality.
++    const correctAction = legalTypes.includes('check') ? 'check' : legalTypes.includes('call') ? 'call' : legalTypes[0];
++    return {
++      kind: 'action-choice',
++      prompt: legalTypes.includes('check')
++        ? 'Which legal action continues the hand without adding chips right now?'
++        : legalTypes.includes('call')
++          ? 'Which legal action matches the current wager without raising it?'
++          : 'Which action shown is legal for the current seat?',
++      options: legalTypes.map(type => option(type)),
++      correctAction,
++      explanation: correctAction === 'check'
++        ? 'Checking is legal only when there is no amount to call, so it continues the hand without adding chips.'
++        : correctAction === 'call'
++          ? 'Calling matches the amount currently required without increasing the wager.'
++          : 'The answer comes directly from the live Hold’em engine legal-action set for this seat.',
++    };
++  }
++
++  if (gameId === 'spades') {
++    if (state.phase === 'bidding') {
++      return {
++        kind: 'rule-check',
++        prompt: 'Which bid is legal at this point in HoldWise Spades?',
++        options: [option('0', 'Nil (0)'), option('13', '13'), option('14', '14')],
++        correctAction: '0',
++        correctOptions: ['0', '13'],
++        explanation: 'HoldWise accepts bids from 0 through 13. A bid of 0 is Nil; 14 is impossible because a hand contains 13 tricks.',
++      };
++    }
++    return cardContrastDecision({
++      gameName: 'Spades', state, engine: spadesEngine,
++      ruleText: state.trick?.length
++        ? 'You must follow the led suit when you still hold that suit. Only when void may you discard or trump.'
++        : 'Spades cannot be led until broken unless your hand contains only Spades.',
++    });
++  }
++
++  if (gameId === 'hearts') {
++    if (state.phase === 'passing') return null;
++    return cardContrastDecision({
++      gameName: 'Hearts', state, engine: heartsEngine,
++      ruleText: state.trickNumber === 0
++        ? 'The 2♣ opens the first trick, and first-trick point cards are restricted when a non-point alternative exists.'
++        : 'You must follow the led suit when possible. Hearts cannot be led before they are broken unless the hand is all Hearts.',
++    });
++  }
++
++  if (gameId === 'klondike') {
++    const legal = klondikeEngine.legalActions(state).filter(action => action.type !== 'undo');
++    if (!legal.length) return null;
++    const chosen = legal[0];
++    const legalTypes = new Set(legal.map(action => action.type));
++    const distractors = [
++      option('move-covered-card', 'Move a covered tableau card'),
++      option('build-up-tableau', 'Build tableau upward in the same color'),
++      option('queen-to-empty', 'Move a Queen into an empty tableau column'),
++    ];
++    return {
++      kind: 'action-choice',
++      prompt: 'Which move is legal in this Klondike position?',
++      options: uniqueOptions([option(chosen.type), ...distractors]).slice(0, 4),
++      correctAction: chosen.type,
++      correctOptions: [...legalTypes],
