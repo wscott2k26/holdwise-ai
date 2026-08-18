@@ -1,0 +1,230 @@
++      explanation: 'The correct choice is derived from the live Klondike engine. Tableau builds downward in alternating colors, and only Kings may enter empty tableau columns.',
++    };
++  }
++
++  return null;
++}
++
++export function isTutorialDecisionCorrect(decision, value) {
++  if (!decision) return false;
++  const accepted = decision.correctOptions?.length ? decision.correctOptions : [decision.correctAction];
++  return accepted.includes(value);
++}
+diff --git a/src/main.jsx b/src/main.jsx
+index cb2d964..cc644b6 100644
+--- a/src/main.jsx
++++ b/src/main.jsx
+@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
+ import App from '@/App.jsx'
+ import { installNativeBootErrorForwarding, reportNativeBootReady } from '@/lib/nativeBoot'
+ import '@/index.css'
++import '@/card-academy-upgrades.css'
+ 
+ installNativeBootErrorForwarding()
+ 
+diff --git a/src/pages/CardAcademyLobby.jsx b/src/pages/CardAcademyLobby.jsx
+index d36044a..ea77572 100644
+--- a/src/pages/CardAcademyLobby.jsx
++++ b/src/pages/CardAcademyLobby.jsx
+@@ -1,12 +1,15 @@
+ import React, { useMemo } from 'react';
+ import { useNavigate } from 'react-router-dom';
+-import { BookOpen, Flame, Play, Sparkles, Trophy, Zap } from 'lucide-react';
++import { Play, Sparkles, Trophy, Zap, Volume2, VolumeX, Vibrate } from 'lucide-react';
+ import GlassSurface from '@/components/premium/GlassSurface';
+ import TactilePressable from '@/components/premium/TactilePressable';
+ import ScreenReveal, { RevealItem } from '@/components/premium/ScreenReveal';
+ import GameFamilyTile from '@/components/games/GameFamilyTile';
+ import { CARD_ACADEMY_FAMILIES, CARD_ACADEMY_GAMES, gamesByFamily, getGame } from '@/games/catalog';
+ import { loadCardAcademyProgress } from '@/lib/cardAcademyProgress';
++import { useApp } from '@/lib/appContext';
++import MasterySummary from '@/components/academy/MasterySummary';
++import AchievementStrip from '@/components/academy/AchievementStrip';
+ 
+ const FAMILY_LABELS = { poker:'Poker', casino:'Casino', solitaire:'Solitaire', classics:'Classics', family:'Family' };
+ 
+@@ -26,13 +29,13 @@ function MiniGameCard({ game, onPlay, onTutorial }) {
+ 
+ export default function CardAcademyLobby() {
+   const navigate = useNavigate();
++  const { settings,setSettings,accessibility,setAccessibility } = useApp();
+   const progress = useMemo(() => loadCardAcademyProgress(), []);
+   const recent = progress.recentGames.map(getGame).filter(Boolean);
+   const continueGame = recent[0] || getGame('jacks-or-better');
+-  const streak = Number(globalThis.localStorage?.getItem?.('holdwise_streak_days') || 0);
+ 
+   return (
+-    <ScreenReveal className="min-h-screen px-3 pb-8 pt-[max(1rem,env(safe-area-inset-top))]">
++    <ScreenReveal className="hw-academy-light min-h-screen px-3 pb-8 pt-[max(1rem,env(safe-area-inset-top))]">
+       <div className="mx-auto max-w-5xl space-y-4">
+         <RevealItem order={0}>
+           <GlassSurface strength={4} goldEdge className="relative overflow-hidden rounded-[2rem] p-5 sm:p-6">
+@@ -51,6 +54,8 @@ export default function CardAcademyLobby() {
+                 </div>
+               </div>
+ 
++              <div className="mt-4 flex flex-wrap gap-2"><TactilePressable aria-pressed={settings.soundEffects !== false} onClick={()=>setSettings(current=>({...current,soundEffects:current.soundEffects===false}))} className="hw-feedback-toggle rounded-full px-3 py-2 text-xs font-black shadow-none">{settings.soundEffects !== false?<Volume2 size={14} className="hw-inline-icon inline"/>:<VolumeX size={14} className="hw-inline-icon inline"/>}Sound {settings.soundEffects !== false?'On':'Off'}</TactilePressable><TactilePressable aria-pressed={accessibility.haptics} onClick={()=>setAccessibility(current=>({...current,haptics:!current.haptics}))} className="hw-feedback-toggle rounded-full px-3 py-2 text-xs font-black shadow-none"><Vibrate size={14} className="hw-inline-icon inline"/>Haptics {accessibility.haptics?'On':'Off'}</TactilePressable></div>
++
+               <div className="mt-5 grid gap-3 sm:grid-cols-[1.25fr_.75fr]">
+                 <TactilePressable onClick={() => navigate(`/game/${continueGame.id}`)} className="rounded-2xl bg-[hsl(var(--hw-gold))] p-4 text-left text-[hsl(var(--hw-navy))]">
+                   <div className="flex items-center justify-between gap-3">
+@@ -66,10 +71,9 @@ export default function CardAcademyLobby() {
+           </GlassSurface>
+         </RevealItem>
+ 
+-        <RevealItem order={1} className="grid grid-cols-3 gap-2">
+-          <GlassSurface strength={2} className="rounded-2xl p-3"><p className="text-[9px] uppercase tracking-[0.15em] text-white/45">XP</p><p className="mt-1 text-lg font-black text-white">{progress.totalXp || 0}</p></GlassSurface>
+-          <GlassSurface strength={2} className="rounded-2xl p-3"><p className="flex items-center gap-1 text-[9px] uppercase tracking-[0.15em] text-white/45"><Flame size={11} /> streak</p><p className="mt-1 text-lg font-black text-white">{streak}d</p></GlassSurface>
+-          <GlassSurface strength={2} className="rounded-2xl p-3"><p className="flex items-center gap-1 text-[9px] uppercase tracking-[0.15em] text-white/45"><BookOpen size={11} /> tutorials</p><p className="mt-1 text-lg font-black text-white">{Object.values(progress.games).filter(row=>row.tutorialComplete).length}</p></GlassSurface>
++        <RevealItem order={1} className="space-y-2">
++          <MasterySummary progress={progress} />
++          <AchievementStrip progress={progress} />
+         </RevealItem>
+ 
+         <RevealItem order={2}>
+diff --git a/src/pages/DailyChallengeHub.jsx b/src/pages/DailyChallengeHub.jsx
+index 9f178c2..3fe7e74 100644
+--- a/src/pages/DailyChallengeHub.jsx
++++ b/src/pages/DailyChallengeHub.jsx
+@@ -4,29 +4,40 @@ import { CheckCircle2, Trophy } from 'lucide-react';
+ import GlassSurface from '@/components/premium/GlassSurface';
+ import TactilePressable from '@/components/premium/TactilePressable';
+ import PlayingCard from '@/components/PlayingCard';
+-import { buildDailyChallengeHands, buildDailyChallengeOptions, buildDailyChallengeRecord, saveDailyChallengeRecord } from '@/lib/dailyChallenge';
++import { buildDailyChallengeHands, buildDailyChallengeOptions, buildDailyChallengeRecord, loadDailyChallengeRecord, saveDailyChallengeRecord } from '@/lib/dailyChallenge';
++import { recordDailyChallengeCompletion } from '@/lib/cardAcademyProgress';
+ import { evaluateHand } from '@/lib/cards/handEvaluator';
++import { playSound } from '@/lib/sound';
++import { hapticPulse } from '@/lib/haptics';
++import { useApp } from '@/lib/appContext';
+ 
+ export default function DailyChallengeHub() {
+   const navigate = useNavigate();
+-  const hands = useMemo(() => buildDailyChallengeHands(new Date(), 5), []);
++  const { accessibility, settings } = useApp();
++  const today = useMemo(() => new Date(), []);
++  const priorRecord = useMemo(() => loadDailyChallengeRecord(today), [today]);
++  const hands = useMemo(() => buildDailyChallengeHands(today, 5), [today]);
+   const [index,setIndex] = useState(0);
+-  const [score,setScore] = useState(0);
++  const [score,setScore] = useState(priorRecord?.score || 0);
+   const [answered,setAnswered] = useState(false);
+-  const [done,setDone] = useState(false);
++  const [done,setDone] = useState(Boolean(priorRecord));
+   const hand = hands[index];
+-  const options = useMemo(() => buildDailyChallengeOptions(hand, new Date(), index), [hand,index]);
++  const options = useMemo(() => buildDailyChallengeOptions(hand, today, index), [hand,index,today]);
+ 
+   function choose(name) {
+     if (answered) return;
+     const correct = name === evaluateHand(hand).name;
+     if (correct) setScore(v=>v+1);
++    playSound(correct ? 'correct' : 'incorrect', { enabled: settings.soundEffects });
++    hapticPulse(accessibility.haptics, correct ? [12, 24, 12] : 28, correct ? 'success' : 'warning');
+     setAnswered(true);
+   }
+   function next() {
+     if (index === hands.length-1) {
+-      const finalScore = score + (answered ? 0 : 0);
+-      saveDailyChallengeRecord(buildDailyChallengeRecord(new Date(), finalScore, hands.length));
++      const finalScore = score;
++      const record = buildDailyChallengeRecord(today, finalScore, hands.length);
++      saveDailyChallengeRecord(record);
++      recordDailyChallengeCompletion({date:record.date,score:finalScore,total:hands.length,xp:50 + finalScore*15});
+       setDone(true);
+       return;
+     }
+@@ -35,6 +46,6 @@ export default function DailyChallengeHub() {
+ 
+   return <div className="min-h-screen px-3 pt-[max(1rem,env(safe-area-inset-top))] text-white"><div className="mx-auto max-w-2xl">
+     <GlassSurface strength={4} goldEdge className="rounded-[1.75rem] p-5"><p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[.18em] hw-gold-text"><Trophy size={14}/> Daily Challenge</p><h1 className="mt-2 font-heading text-2xl font-black">Five smart decisions</h1><p className="mt-1 text-sm text-white/60">Name the made hand. Come back tomorrow for a fresh deterministic set.</p></GlassSurface>
+-    {!done ? <GlassSurface strength={3} className="mt-4 rounded-[1.75rem] p-4"><div className="flex justify-between text-xs text-white/50"><span>Hand {index+1}/5</span><span>Score {score}</span></div><div className="mt-5 flex justify-center gap-1.5">{hand.map(card=><PlayingCard key={card.id} card={card} size="md" />)}</div><div className="mt-5 grid grid-cols-2 gap-2">{options.map(option=>{const correct=evaluateHand(hand).name===option;return <TactilePressable key={option} onClick={()=>choose(option)} className={`rounded-xl px-3 py-3 text-sm font-bold ${answered&&correct?'bg-emerald-400 text-black':'bg-white/7 text-white shadow-none'}`}>{option}</TactilePressable>)}</div>{answered&&<TactilePressable onClick={next} className="mt-4 w-full rounded-2xl bg-[hsl(var(--hw-gold))] px-4 py-3 font-black text-[hsl(var(--hw-navy))]">{index===4?'Finish challenge':'Next hand'}</TactilePressable>}</GlassSurface> : <GlassSurface strength={4} goldEdge className="mt-4 rounded-[1.75rem] p-8 text-center"><CheckCircle2 size={50} className="mx-auto hw-gold-text"/><h2 className="mt-3 font-heading text-2xl font-black">Challenge complete</h2><p className="mt-2 text-white/60">You scored {score} of 5.</p><TactilePressable onClick={()=>navigate('/academy')} className="mt-5 rounded-2xl bg-[hsl(var(--hw-gold))] px-5 py-3 font-black text-[hsl(var(--hw-navy))]">Back to Academy</TactilePressable></GlassSurface>}
++    {!done ? <GlassSurface strength={3} className="mt-4 rounded-[1.75rem] p-4"><div className="flex justify-between text-xs text-white/50"><span>Hand {index+1}/5</span><span>Score {score}</span></div><div className="mt-5 flex justify-center gap-1.5">{hand.map(card=><PlayingCard key={card.id} card={card} size="md" />)}</div><div className="mt-5 grid grid-cols-2 gap-2">{options.map(option=>{const correct=evaluateHand(hand).name===option;return <TactilePressable key={option} onClick={()=>choose(option)} className={`rounded-xl px-3 py-3 text-sm font-bold ${answered&&correct?'bg-emerald-400 text-black':'bg-white/7 text-white shadow-none'}`}>{option}</TactilePressable>)}</div>{answered&&<TactilePressable onClick={next} className="mt-4 w-full rounded-2xl bg-[hsl(var(--hw-gold))] px-4 py-3 font-black text-[hsl(var(--hw-navy))]">{index===4?'Finish challenge':'Next hand'}</TactilePressable>}</GlassSurface> : <GlassSurface strength={4} goldEdge className="mt-4 rounded-[1.75rem] p-8 text-center"><CheckCircle2 size={50} className="mx-auto hw-gold-text"/><h2 className="mt-3 font-heading text-2xl font-black">Challenge complete</h2><p className="mt-2 text-white/60">You scored {score} of 5.{priorRecord ? ' Today’s XP was already claimed.' : ' Your one-time daily XP is saved.'}</p><TactilePressable onClick={()=>navigate('/academy')} className="mt-5 rounded-2xl bg-[hsl(var(--hw-gold))] px-5 py-3 font-black text-[hsl(var(--hw-navy))]">Back to Academy</TactilePressable></GlassSurface>}
+   </div></div>;
+ }
+diff --git a/src/pages/GameTutorial.jsx b/src/pages/GameTutorial.jsx
+index 8949752..23f57e7 100644
+--- a/src/pages/GameTutorial.jsx
++++ b/src/pages/GameTutorial.jsx
+@@ -5,7 +5,11 @@ import GlassSurface from '@/components/premium/GlassSurface';
+ import TactilePressable from '@/components/premium/TactilePressable';
+ import { getGame } from '@/games/catalog';
+ import { getEngine } from '@/games/engineRegistry';
+-import { markTutorialComplete } from '@/lib/cardAcademyProgress';
++import { markTutorialComplete, recordCoachDecision } from '@/lib/cardAcademyProgress';
++import { buildTutorialDecision, isTutorialDecisionCorrect } from '@/lib/tutorialDecisions';
++import { playSound } from '@/lib/sound';
++import { hapticPulse } from '@/lib/haptics';
++import { useApp } from '@/lib/appContext';
+ 
+ const GUIDES = {
+   'texas-holdem': {objective:'Make the best five-card poker hand from your two hole cards and the five community cards.',table:'Four seats, dealer button, small blind, big blind, community board and a shared pot.',turn:'Betting runs preflop, flop, turn and river. Fold, check, call, bet, raise or go all-in only when legal.',scoring:'At showdown the strongest five-card hand wins each pot. Side pots protect all-in contribution limits.',mistakes:'Do not call every hand, ignore position, or raise below the legal minimum.'},
+@@ -75,6 +79,7 @@ function actionLabel(action) {
+ 
+ export default function GameTutorial() {
+   const { gameId } = useParams();
++  const { accessibility, settings } = useApp();
+   const navigate = useNavigate();
+   const game = getGame(gameId);
+   const engine = getEngine(gameId);
+@@ -83,6 +88,7 @@ export default function GameTutorial() {
+   const [practiceState,setPracticeState] = useState(() => engine?.createGame({seed:20260815,humanSeat:0}) || null);
+   const [practiceMessage,setPracticeMessage] = useState('Ready for a real rules-engine move.');
+   const [completed,setCompleted] = useState(false);
++  const [decisionAnswers,setDecisionAnswers] = useState({});
+   const step = steps[stepIndex];
+ 
+   useEffect(() => {
+@@ -90,6 +96,7 @@ export default function GameTutorial() {
+     setPracticeState(engine?.createGame({seed:20260815,humanSeat:0}) || null);
+     setPracticeMessage('Ready for a real rules-engine move.');
+     setCompleted(false);
++    setDecisionAnswers({});
+   }, [gameId]);
+ 
+   useEffect(() => {
+@@ -104,6 +111,9 @@ export default function GameTutorial() {
+   const actor = actorFor(practiceState);
+   const coachFacts = engine.coachFacts(practiceState,actor) || [];
+   const liveKinds = new Set(['interactive','guided-game','graduation']);
++  const tutorialDecision = liveKinds.has(step.kind) ? buildTutorialDecision(gameId, practiceState) : null;
++  const decisionKey = `${gameId}:${step.id}`;
++  const decisionAnswer = decisionAnswers[decisionKey] || null;
+ 
+   function tryLegalMove() {
+     let state = practiceState;
+@@ -129,6 +139,17 @@ export default function GameTutorial() {
+     setPracticeMessage(lastError ? `Coach blocked that path: ${lastError.message}` : 'No legal move is available in this sandbox state. Reset it and try again.');
+   }
+ 
++
++  function chooseTutorialDecision(value) {
++    if (!tutorialDecision || decisionAnswer) return;
++    const correct = isTutorialDecisionCorrect(tutorialDecision,value);
++    setDecisionAnswers(current => ({ ...current, [decisionKey]: { value, correct } }));
++    recordCoachDecision(gameId,{family:game.family,correct,xp:correct?20:5});
++    playSound(correct ? 'correct' : 'incorrect', { enabled: settings.soundEffects });
++    hapticPulse(accessibility.haptics, correct ? [12, 24, 12] : 28, correct ? 'success' : 'warning');
++    setPracticeMessage(correct ? `COACH · Correct. ${tutorialDecision.explanation}` : `COACH · Not this time. ${tutorialDecision.explanation}`);
++  }
++
+   function resetPractice() {
+     setPracticeState(engine.createGame({seed:20260815 + stepIndex + 41,humanSeat:0}));
+     setPracticeMessage('Practice state reset.');
+@@ -143,21 +164,22 @@ export default function GameTutorial() {
+     <div className="mt-5">
+       <p className="text-[10px] font-black uppercase tracking-[.18em] hw-gold-text">{game.title}</p>
+       <h1 className="mt-1 font-heading text-3xl font-black">{step.title}</h1>
+-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/8"><div className="h-full rounded-full bg-[hsl(var(--hw-gold))] transition-all" style={{width:`${((stepIndex+1)/steps.length)*100}%`}}/></div>
++      <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-[hsl(var(--hw-gold))] transition-all" style={{width:`${((stepIndex+1)/steps.length)*100}%`}}/></div>
+     </div>
+ 
+     <GlassSurface strength={4} goldEdge className="mt-5 rounded-[1.8rem] p-5">
+-      <div className="flex items-start gap-3"><div className="rounded-2xl border border-amber-200/15 bg-amber-200/7 p-3"><BookOpen className="hw-gold-text"/></div><p className="text-sm leading-7 text-white/72">{step.body}</p></div>
++      <div className="flex items-start gap-3"><div className="rounded-2xl border border-amber-200/15 bg-amber-200/5 p-3"><BookOpen className="hw-gold-text"/></div><p className="text-sm leading-7 text-white/70">{step.body}</p></div>
+     </GlassSurface>
+ 
+     {(liveKinds.has(step.kind) || step.kind === 'review') && <GlassSurface strength={3} className="mt-4 rounded-[1.8rem] p-4">
+       <div className="flex items-center justify-between gap-3"><div><p className="text-[9px] font-black uppercase tracking-[.16em] text-emerald-200/70">Live engine sandbox</p><p className="mt-1 text-sm font-black">Seat {actor+1} · {practiceState?.phase || 'active'}</p></div><CheckCircle2 size={22} className="text-emerald-300"/></div>
+-      <p className="mt-3 rounded-xl border border-white/7 bg-black/15 p-3 text-xs leading-5 text-white/58">{practiceMessage}</p>
+-      <div className="mt-3 space-y-1.5">{coachFacts.slice(0,4).map((fact,index)=><p key={index} className="text-[11px] leading-5 text-white/48">• {fact}</p>)}</div>
