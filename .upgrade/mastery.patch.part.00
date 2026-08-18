@@ -1,0 +1,330 @@
+diff --git a/.github/workflows/card-academy-mastery-upgrade-ci.yml b/.github/workflows/card-academy-mastery-upgrade-ci.yml
+new file mode 100644
+index 0000000..6109a88
+--- /dev/null
++++ b/.github/workflows/card-academy-mastery-upgrade-ci.yml
+@@ -0,0 +1,87 @@
++name: Card Academy Mastery Upgrade CI
++
++on:
++  push:
++    branches:
++      - card-academy-mastery-upgrade-v2
++  workflow_dispatch:
++
++permissions:
++  contents: read
++
++jobs:
++  full-upgrade-qa:
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v4
++        with:
++          fetch-depth: 0
++      - uses: actions/setup-node@v4
++        with:
++          node-version: 22
++          cache: npm
++      - name: Verify exact Card Academy ancestry
++        run: node scripts/verify-upgrade-ancestry.mjs
++      - name: Existing Card Academy rules and source gates
++        run: |
++          set -euo pipefail
++          node --test \
++            tests/native-ready-source.test.mjs \
++            tests/card-academy-catalog.test.mjs \
++            tests/tutorial-contract.test.mjs \
++            tests/card-academy-progress.test.mjs \
++            tests/card-academy-routing.test.mjs \
++            tests/card-academy-visual.test.mjs \
++            tests/poker-evaluator.test.mjs \
++            tests/texas-holdem-engine.test.mjs \
++            tests/texas-holdem-ui.test.mjs \
++            tests/video-poker-variants.test.mjs \
++            tests/video-poker-ui.test.mjs \
++            tests/video-poker-result-component.test.mjs \
++            tests/video-poker-no-dead-control.test.mjs \
++            tests/blackjack-engine.test.mjs \
++            tests/blackjack-ui.test.mjs \
++            tests/solitaire-engines.test.mjs \
++            tests/solitaire-ui.test.mjs \
++            tests/trick-taking-engines.test.mjs \
++            tests/trick-taking-ui.test.mjs \
++            tests/gin-rummy-engine.test.mjs \
++            tests/gin-rummy-ui.test.mjs \
++            tests/family-card-engines.test.mjs \
++            tests/family-card-ui.test.mjs \
++            tests/engine-registry-complete.test.mjs \
++            tests/no-placeholder-routes.test.mjs \
++            tests/tutorial-live-engine.test.mjs
++      - name: Mastery upgrade regression gates
++        run: |
++          set -euo pipefail
++          node scripts/core-regression.mjs
++          node scripts/progression-regression.mjs
++          node scripts/daily-regression.mjs
++          node scripts/tutorial-regression.mjs
++          node scripts/sound-regression.mjs
++          node scripts/storm-intro-regression.mjs
++          node scripts/mastery-presentation-regression.mjs
++          node scripts/feedback-integration-regression.mjs
++      - name: Install exact web dependencies
++        run: npm ci --no-audit --no-fund
++      - name: Existing native and premium regressions
++        run: |
++          node --test \
++            tests/native-boot.test.mjs \
++            tests/app-params-native.test.mjs \
++            tests/native-web-packaging.test.mjs \
++            tests/stormandme-native-contract.test.mjs \
++            tests/daily-engagement.test.mjs \
++            tests/haptics.test.mjs \
++            tests/mastery.test.mjs \
++            tests/premium-visual.test.mjs
++      - name: Static quality gates
++        run: |
++          npm run lint
++          npm run typecheck
++          npm run audit:gameplay
++      - name: Production web build
++        run: npm run build
++      - name: Post-build release audit
++        run: node scripts/release-audit.mjs --require-dist
+diff --git a/scripts/core-regression.mjs b/scripts/core-regression.mjs
+new file mode 100644
+index 0000000..0b7b979
+--- /dev/null
++++ b/scripts/core-regression.mjs
+@@ -0,0 +1,86 @@
++import assert from 'node:assert/strict';
++import { buildCard, createDeck, validateDeck } from '../src/lib/cards/deck.js';
++import { CARD_ACADEMY_GAMES } from '../src/games/catalog.js';
++import { ENGINE_REGISTRY } from '../src/games/engineRegistry.js';
++import { blackjackEngine, blackjackValue } from '../src/games/engines/blackjack.js';
++import { texasHoldemEngine, runBotsUntilHumanTurn } from '../src/games/engines/texasHoldem.js';
++import { bestFiveOfSeven, evaluateFive } from '../src/games/core/pokerEvaluator.js';
++import { legalSpadesCards, scoreSpadesRound, spadesTrickWinner } from '../src/games/engines/spades.js';
++import { legalHeartsCards, passTarget, scoreHeartsRound } from '../src/games/engines/hearts.js';
++import { klondikeEngine, canStackKlondike } from '../src/games/engines/klondike.js';
++import { spiderEngine } from '../src/games/engines/spider.js';
++import { freeCellEngine, freeCellMoveCapacity } from '../src/games/engines/freecell.js';
++import { triPeaksEngine, isTriPeaksAdjacent } from '../src/games/engines/tripeaks.js';
++import { pyramidEngine } from '../src/games/engines/pyramid.js';
++
++let checks = 0;
++const ok = (condition, message) => { assert.ok(condition, message); checks += 1; };
++const eq = (actual, expected, message) => { assert.deepEqual(actual, expected, message); checks += 1; };
++
++// Recovery/catalog gates.
++const deck = createDeck();
++eq(deck.length, 52, 'standard deck has 52 cards');
++eq(new Set(deck.map(c => c.id)).size, 52, 'standard deck has unique IDs');
++ok(validateDeck(deck).ok, 'standard deck validates');
++eq(CARD_ACADEMY_GAMES.length, 21, 'catalog preserves 21 shipped games');
++for (const game of CARD_ACADEMY_GAMES) ok(Boolean(ENGINE_REGISTRY[game.id]), `engine exists for ${game.id}`);
++
++// Blackjack.
++const ace = buildCard('A', 'hearts');
++const six = buildCard('6', 'clubs');
++const ten = buildCard('10', 'diamonds');
++eq(blackjackValue([ace, six]).total, 17, 'soft ace totals 17');
++eq(blackjackValue([ace, six, ten]).total, 17, 'ace downgrades to 1 when needed');
++const splitShoe = [buildCard('8','hearts'), buildCard('6','clubs'), buildCard('8','spades'), buildCard('10','diamonds'), ...createDeck().filter(c => !['8hearts','6clubs','8spades','10diamonds'].includes(c.id))];
++let bj = blackjackEngine.createGame({ bankroll: 100, bet: 10, forcedShoe: splitShoe });
++bj = blackjackEngine.applyAction(bj, { type: 'deal' });
++const bjTypes = blackjackEngine.legalActions(bj).map(a => a.type);
++ok(bjTypes.includes('split'), 'pair can split');
++ok(bjTypes.includes('double'), 'opening hand can double');
++
++// Poker/Hold'em.
++const wheel = ['A','2','3','4','5'].map((rank, i) => buildCard(rank, ['hearts','clubs','diamonds','spades','hearts'][i]));
++eq(evaluateFive(wheel).category, 'STRAIGHT', 'wheel is straight');
++eq(evaluateFive(wheel).ranks[0], 5, 'wheel is five-high');
++const seven = [buildCard('A','hearts'),buildCard('A','clubs'),buildCard('K','hearts'),buildCard('K','clubs'),buildCard('K','diamonds'),buildCard('2','spades'),buildCard('3','hearts')];
++eq(bestFiveOfSeven(seven).category, 'FULL_HOUSE', 'best five of seven finds full house');
++let holdem = texasHoldemEngine.createGame({ seed: 77, startingStack: 1000, dealer: 0, humanSeat: 0 });
++const totalChips = state => state.players.reduce((sum,p)=>sum+p.stack+p.contribution,0);
++eq(totalChips(holdem), 4000, 'Holdem conserves chips after blinds');
++holdem = runBotsUntilHumanTurn(holdem);
++eq(totalChips(holdem), 4000, 'Holdem conserves chips after bot actions');
++ok(holdem.handComplete || holdem.actor === 0, 'bots stop at human or completed hand');
++
++// Spades.
++const spade2=buildCard('2','spades'), heart2=buildCard('2','hearts'), heartA=buildCard('A','hearts'), spadeA=buildCard('A','spades');
++eq(legalSpadesCards([spade2,heart2], [], false).map(c=>c.id), [heart2.id], 'cannot lead spade before broken when non-spade exists');
++eq(legalSpadesCards([spade2,heart2], [{seat:1,card:spadeA}], false).map(c=>c.id), [spade2.id], 'must follow spades when able');
++eq(spadesTrickWinner([{seat:0,card:heartA},{seat:1,card:spade2},{seat:2,card:buildCard('K','hearts')},{seat:3,card:buildCard('3','clubs')}]),1,'spade trump wins trick');
++const spScore=scoreSpadesRound({bids:[3,2,2,2],tricks:[3,2,3,2],nil:[false,false,false,false],scores:[0,0],bags:[9,0]});
++eq(spScore.scores[0], -49, 'bag penalty applies at ten bags');
++eq(spScore.bags[0], 0, 'bags roll after penalty');
++
++// Hearts.
++eq(passTarget(0,'left'),1,'hearts left pass');
++eq(passTarget(0,'right'),3,'hearts right pass');
++eq(passTarget(0,'across'),2,'hearts across pass');
++const twoClubs=buildCard('2','clubs'), qSpades=buildCard('Q','spades'), heart3=buildCard('3','hearts');
++eq(legalHeartsCards([twoClubs,heart3],[],false,0).map(c=>c.id),[twoClubs.id],'2 clubs opens first trick');
++const club4=buildCard('4','clubs');
++eq(legalHeartsCards([qSpades,heart3,club4],[{seat:1,card:buildCard('5','diamonds')}],false,0).map(c=>c.id),[club4.id],'first trick forces non-point card when one exists');
++eq(legalHeartsCards([qSpades,heart3],[{seat:1,card:buildCard('5','diamonds')}],false,0).length,2,'first trick allows points only when no non-point card exists');
++const moon=scoreHeartsRound([26,0,0,0],[0,0,0,0],100);
++eq(moon.scores,[0,26,26,26],'shooting the moon adds 26 to opponents');
++
++// Solitaire family rules/smoke.
++ok(canStackKlondike(buildCard('6','hearts'), buildCard('7','spades')), 'Klondike alternates colors descending');
++ok(!canStackKlondike(buildCard('6','hearts'), buildCard('7','diamonds')), 'Klondike rejects same color');
++eq(freeCellMoveCapacity(4,0),5,'FreeCell capacity with four cells');
++ok(isTriPeaksAdjacent(buildCard('A','spades'), buildCard('K','hearts'), true),'TriPeaks wraps A/K');
++for (const engine of [klondikeEngine, spiderEngine, freeCellEngine, triPeaksEngine, pyramidEngine]) {
++  const state=engine.createGame({seed:42});
++  eq(state.id,engine.id,`${engine.id} state id matches`);
++  ok(Array.isArray(engine.legalActions(state)),`${engine.id} legalActions returns array`);
++}
++
++console.log(`Core regression PASS: ${checks} checks`);
+diff --git a/scripts/daily-regression.mjs b/scripts/daily-regression.mjs
+new file mode 100644
+index 0000000..8bda1f1
+--- /dev/null
++++ b/scripts/daily-regression.mjs
+@@ -0,0 +1,19 @@
++import assert from 'node:assert/strict';
++import { buildDailyChallengeHands, buildDailyChallengeOptions, dailyChallengeDateKey } from '../src/lib/dailyChallenge.js';
++import { recordDailyChallengeCompletion, CARD_ACADEMY_PROGRESS_KEY } from '../src/lib/cardAcademyProgress.js';
++
++class MemoryStorage { constructor(){this.map=new Map()} getItem(k){return this.map.get(k)??null} setItem(k,v){this.map.set(k,String(v))} }
++let checks=0; const eq=(a,b,m)=>{assert.deepEqual(a,b,m);checks++}; const ok=(v,m)=>{assert.ok(v,m);checks++};
++const d1=new Date(2026,7,18,12); const d2=new Date(2026,7,19,12);
++const h1=buildDailyChallengeHands(d1,5); const h1b=buildDailyChallengeHands(d1,5); const h2=buildDailyChallengeHands(d2,5);
++eq(dailyChallengeDateKey(d1),'2026-08-18','local date key deterministic');
++eq(h1.map(h=>h.map(c=>c.id)),h1b.map(h=>h.map(c=>c.id)),'same date produces same hands');
++ok(JSON.stringify(h1.map(h=>h.map(c=>c.id)))!==JSON.stringify(h2.map(h=>h.map(c=>c.id))),'different date changes hands');
++eq(buildDailyChallengeOptions(h1[0],d1,0),buildDailyChallengeOptions(h1[0],d1,0),'same hand/date yields same options');
++const storage=new MemoryStorage();
++recordDailyChallengeCompletion({date:'2026-08-18',score:3,total:5,xp:95},storage);
++recordDailyChallengeCompletion({date:'2026-08-18',score:5,total:5,xp:125},storage);
++const p=JSON.parse(storage.getItem(CARD_ACADEMY_PROGRESS_KEY));
++eq(p.totalXp,95,'daily reward remains one-time for the date');
++eq(p.dailyRewards['2026-08-18'].score,3,'first completion record persists');
++console.log(`Daily challenge regression PASS: ${checks} checks`);
+diff --git a/scripts/feedback-integration-regression.mjs b/scripts/feedback-integration-regression.mjs
+new file mode 100644
+index 0000000..5c5ff89
+--- /dev/null
++++ b/scripts/feedback-integration-regression.mjs
+@@ -0,0 +1,18 @@
++import assert from 'node:assert/strict';
++import { readFile } from 'node:fs/promises';
++
++let checks = 0;
++const ok = (value, message) => { assert.ok(value, message); checks++; };
++const files = {
++  tutorial: await readFile(new URL('../src/pages/GameTutorial.jsx', import.meta.url), 'utf8'),
++  daily: await readFile(new URL('../src/pages/DailyChallengeHub.jsx', import.meta.url), 'utf8'),
++};
++
++for (const [name, source] of Object.entries(files)) {
++  ok(source.includes("from '@/lib/sound'"), `${name} imports centralized sound manager`);
++  ok(source.includes("from '@/lib/haptics'"), `${name} imports semantic haptic bridge`);
++  ok(source.includes('playSound(correct ? \'correct\' : \'incorrect\''), `${name} plays semantic answer sound`);
++  ok(source.includes("hapticPulse(accessibility.haptics"), `${name} routes feedback through persisted haptic setting`);
++}
++
++console.log(`Feedback integration regression PASS: ${checks} checks`);
+diff --git a/scripts/mastery-presentation-regression.mjs b/scripts/mastery-presentation-regression.mjs
+new file mode 100644
+index 0000000..6643eaa
+--- /dev/null
++++ b/scripts/mastery-presentation-regression.mjs
+@@ -0,0 +1,18 @@
++import assert from 'node:assert/strict';
++import { buildMasterySummary, recentUnlockedAchievements } from '../src/lib/masteryPresentation.js';
++import { CARD_ACADEMY_GAMES } from '../src/games/catalog.js';
++let checks=0;const eq=(a,b,m)=>{assert.deepEqual(a,b,m);checks++};const ok=(v,m)=>{assert.ok(v,m);checks++};
++const progress={
++ totalXp:1250, streak:{days:4,lastActiveDate:'2026-08-18'},
++ games:{blackjack:{plays:5,wins:2,tutorialComplete:true,xp:400,totalDecisions:10,correctDecisions:8},spades:{plays:2,wins:1,tutorialComplete:false,xp:120,totalDecisions:0,correctDecisions:0}},
++ achievements:{'first-game':'2026-08-17T10:00:00Z','blackjack-scholar':'2026-08-18T10:00:00Z'}
++};
++const summary=buildMasterySummary(progress,CARD_ACADEMY_GAMES);
++eq(summary.level,3,'1250 XP is overall level 3');
++eq(summary.tutorials,1,'tutorial count derives from game rows');
++eq(summary.streakDays,4,'streak comes from progress');
++ok(summary.topGame?.id==='blackjack','top mastery game is detected');
++const recent=recentUnlockedAchievements(progress,3);
++eq(recent[0].id,'blackjack-scholar','recent achievements sort newest first');
++ok(recent[0].title.length>0,'achievement title is resolved');
++console.log(`Mastery presentation regression PASS: ${checks} checks`);
+diff --git a/scripts/progression-regression.mjs b/scripts/progression-regression.mjs
+new file mode 100644
+index 0000000..8b76f1f
+--- /dev/null
++++ b/scripts/progression-regression.mjs
+@@ -0,0 +1,117 @@
++import assert from 'node:assert/strict';
++import {
++  CARD_ACADEMY_PROGRESS_KEY,
++  loadCardAcademyProgress,
++  markTutorialComplete,
++  recordGameResult,
++  recordCoachDecision,
++  recordDailyChallengeCompletion,
++  deriveOverallLevel,
++  deriveGameMastery,
++} from '../src/lib/cardAcademyProgress.js';
++import { ACHIEVEMENTS, evaluateAchievements } from '../src/lib/achievements.js';
++
++class MemoryStorage {
++  constructor(seed = {}) { this.map = new Map(Object.entries(seed)); }
++  getItem(key) { return this.map.has(key) ? this.map.get(key) : null; }
++  setItem(key, value) { this.map.set(key, String(value)); }
++  removeItem(key) { this.map.delete(key); }
++}
++
++let checks = 0;
++const eq = (actual, expected, msg) => { assert.deepEqual(actual, expected, msg); checks += 1; };
++const ok = (value, msg) => { assert.ok(value, msg); checks += 1; };
++
++// Legacy migration keeps existing values.
++{
++  const storage = new MemoryStorage({
++    [CARD_ACADEMY_PROGRESS_KEY]: JSON.stringify({
++      games: { blackjack: { plays: 4, wins: 2, tutorialComplete: true, xp: 240 } },
++      families: { casino: { plays: 4, wins: 2, tutorials: 1, xp: 240 } },
++      recentGames: ['blackjack'],
++      totalXp: 240,
++    }),
++  });
++  const p = loadCardAcademyProgress(storage);
++  eq(p.schemaVersion, 2, 'legacy profile migrates to schema v2');
++  eq(p.games.blackjack.plays, 4, 'legacy plays preserved');
++  eq(p.games.blackjack.wins, 2, 'legacy wins preserved');
++  eq(p.games.blackjack.correctDecisions, 0, 'accuracy defaults added');
++  eq(p.streak.days, 0, 'streak defaults added');
++  eq(p.achievements, {}, 'achievement map defaults added');
++  eq(p.dailyRewards, {}, 'daily reward map defaults added');
++}
++
++// Tutorial reward is idempotent.
++{
++  const storage = new MemoryStorage();
++  markTutorialComplete('blackjack', { family: 'casino', xp: 100 }, storage, '2026-08-18T12:00:00.000Z');
++  const twice = markTutorialComplete('blackjack', { family: 'casino', xp: 100 }, storage, '2026-08-18T12:01:00.000Z');
++  eq(twice.totalXp, 100, 'tutorial XP only awarded once');
++  eq(twice.games.blackjack.xp, 100, 'game tutorial XP only awarded once');
++}
++
++// Daily challenge reward is one-per-date.
++{
++  const storage = new MemoryStorage();
++  const first = recordDailyChallengeCompletion({ date: '2026-08-18', score: 4, total: 5, xp: 125 }, storage);
++  const second = recordDailyChallengeCompletion({ date: '2026-08-18', score: 5, total: 5, xp: 125 }, storage);
++  eq(first.totalXp, 125, 'first daily challenge rewards XP');
++  eq(second.totalXp, 125, 'same-day challenge cannot reward twice');
++  eq(second.dailyRewards['2026-08-18'].score, 4, 'first completion record remains authoritative');
++}
++
++// Coach decisions update accuracy and streak.
++{
++  const storage = new MemoryStorage();
