@@ -1,0 +1,36 @@
+name: Apply Card Academy Mastery Upgrade
+
+on:
+  push:
+    branches:
+      - card-academy-mastery-upgrade-v2
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply verified upgrade patch once
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          parts=(.upgrade/mastery.patch.part.*)
+          if (( ${#parts[@]} == 0 )); then
+            echo "Upgrade chunks already consumed; nothing to apply."
+            exit 0
+          fi
+          cat "${parts[@]}" > /tmp/card-academy-mastery-upgrade.patch
+          git apply --check /tmp/card-academy-mastery-upgrade.patch
+          git apply /tmp/card-academy-mastery-upgrade.patch
+          git rm -f "${parts[@]}" .github/workflows/apply-card-academy-mastery-upgrade.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: upgrade Card Academy mastery, coaching, sound, and brand"
+          git push origin HEAD:card-academy-mastery-upgrade-v2
