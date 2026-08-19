@@ -157,7 +157,7 @@ export default function HoldemTable({ game }) {
           <h3 className="mt-1 font-heading text-2xl font-black text-white">{winnerText || 'Pot settled'}</h3>
           <p className="mt-2 text-xs text-white/55">{state.lastResult?.type === 'showdown' ? `${state.potResults.length} pot${state.potResults.length===1?'':'s'} settled with exact best-five hand comparison.` : 'The table folded down and the remaining player collected the pot.'}</p>
           <div className="mt-4 grid grid-cols-2 gap-2">
-            {!state.matchComplete && <TactilePressable onClick={nextHand} className="rounded-2xl bg-[hsl(var(--hw-gold))] px-4 py-3 font-black text-[hsl(var(--hw-navy))]">New Hand</TactilePressable>}
+            {!state.matchComplete && <TactilePressable onClick={nextHand} soundType="deal" className="rounded-2xl bg-[hsl(var(--hw-gold))] px-4 py-3 font-black text-[hsl(var(--hw-navy))]">New Hand</TactilePressable>}
             <TactilePressable onClick={newMatch} className="rounded-2xl bg-white/7 px-4 py-3 font-black text-white shadow-none"><RotateCcw size={16} className="mr-1 inline"/>New Match</TactilePressable>
           </div>
         </GlassSurface>}

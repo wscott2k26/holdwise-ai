@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Bot, Crown, Hand, RotateCcw, Sparkles } from 'lucide-react';
+import { Bot, Crown, RotateCcw, Sparkles } from 'lucide-react';
 import GameShell from '@/components/games/GameShell';
 import GlassSurface from '@/components/premium/GlassSurface';
 import TactilePressable from '@/components/premium/TactilePressable';

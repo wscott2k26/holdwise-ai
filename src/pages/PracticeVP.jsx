@@ -14,7 +14,7 @@ import { useEntitlement } from "@/lib/billing";
 import Paywall from "@/components/Paywall";
 import { cn } from "@/lib/utils";
 import { recordPracticeDecision } from "@/lib/practiceStats";
-import { hapticPulse } from "@/lib/haptics";
+import { hapticPulse, playSoundEffect } from "@/lib/haptics";
 import GlassSurface from "@/components/premium/GlassSurface";
 import TactilePressable from "@/components/premium/TactilePressable";
 import ScreenReveal, { RevealItem } from "@/components/premium/ScreenReveal";
@@ -49,7 +49,7 @@ function readHandsToday() {
 export default function PracticeVP() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { profile, accessibility, addPoints, setMascotMood, remainingCoachQuestions } = useApp();
+  const { profile, accessibility, settings, addPoints, setMascotMood, remainingCoachQuestions } = useApp();
   const { isPremium } = useEntitlement();
   const [mode, setMode] = useState("guided");
   const [payTableId, setPayTableId] = useState(DEFAULT_PAY_TABLE_ID);
@@ -197,6 +197,7 @@ export default function PracticeVP() {
     setChecked(result);
     setPhase("evaluated");
     hapticPulse(accessibility.haptics, correct ? 22 : 28, correct ? "success" : "warning");
+    playSoundEffect(settings.soundEffects !== false, correct ? "success" : "warning");
 
     if (handScoredRef.current) return result;
     handScoredRef.current = true;
@@ -406,7 +407,7 @@ export default function PracticeVP() {
                 <div className="flex min-h-[230px] flex-col items-center justify-center text-center">
                   <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-[hsl(var(--hw-gold)/.32)] bg-black/15"><Spade size={30} className="hw-gold-text" /></div>
                   <p className="mb-4 max-w-xs text-sm text-white/70">Deal five cards. Make your hold. Then let Coach Ace show you the exact best decision.</p>
-                  <TactilePressable onClick={deal} className="hw-chip-gold rounded-2xl px-7 py-3 font-semibold">
+                  <TactilePressable onClick={deal} soundType="deal" className="hw-chip-gold rounded-2xl px-7 py-3 font-semibold">
                     <span className="flex items-center gap-2"><Spade size={16} /> Deal five cards</span>
                   </TactilePressable>
                 </div>

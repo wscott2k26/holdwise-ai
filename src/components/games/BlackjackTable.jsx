@@ -85,7 +85,7 @@ export default function BlackjackTable({ game }) {
         <div className="flex items-center justify-between text-xs"><span className="font-bold text-white/65">Bet <strong className="ml-1 hw-gold-text">{state.bet}</strong></span><span className="text-white/40">Bankroll {state.bankroll}</span></div>
         <input type="range" min="1" max={Math.max(1,state.bankroll)} step="5" value={Math.min(state.bet,Math.max(1,state.bankroll))} onChange={event=>apply({type:'set-bet',amount:Number(event.target.value)})} className="mt-2 h-9 w-full accent-amber-300" aria-label="Blackjack bet" />
         <div className="grid grid-cols-4 gap-2">{[10,25,50,100].map(amount=><TactilePressable key={amount} disabled={amount>state.bankroll} onClick={()=>apply({type:'set-bet',amount})} className={`rounded-xl py-2 text-xs font-black ${state.bet===amount?'bg-[hsl(var(--hw-gold))] text-[hsl(var(--hw-navy))]':'bg-white/6 text-white shadow-none'}`}>{amount}</TactilePressable>)}</div>
-        <TactilePressable disabled={!can('deal')} onClick={()=>apply({type:'deal'})} className="mt-3 w-full rounded-2xl bg-[hsl(var(--hw-gold))] px-4 py-3.5 text-lg font-black text-[hsl(var(--hw-navy))]">Deal</TactilePressable>
+        <TactilePressable disabled={!can('deal')} onClick={()=>apply({type:'deal'})} soundType="deal" className="mt-3 w-full rounded-2xl bg-[hsl(var(--hw-gold))] px-4 py-3.5 text-lg font-black text-[hsl(var(--hw-navy))]">Deal</TactilePressable>
       </GlassSurface>}
 
       {state.phase==='insurance' && <GlassSurface strength={4} goldEdge className="mt-3 rounded-[1.6rem] p-4 text-center">

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bot, Fish, Flame, Gauge, RotateCcw, Sparkles, Swords, Trophy } from 'lucide-react';
+import { Bot, Fish, Gauge, RotateCcw, Sparkles, Swords, Trophy } from 'lucide-react';
 import GameShell from '@/components/games/GameShell';
 import GlassSurface from '@/components/premium/GlassSurface';
 import TactilePressable from '@/components/premium/TactilePressable';
@@ -8,7 +8,7 @@ import PlayingCard from '@/components/PlayingCard';
 import { crazyEightsEngine, chooseCrazyEightsBotAction, startNextCrazyEightsRound } from '@/games/engines/crazyEights';
 import { goFishEngine, chooseGoFishBotAction } from '@/games/engines/goFish';
 import { warEngine } from '@/games/engines/war';
-import { speedEngine, chooseSpeedBotAction, driveSpeedBot } from '@/games/engines/speed';
+import { speedEngine, driveSpeedBot } from '@/games/engines/speed';
 import { colorClashEngine, chooseColorClashBotAction, startNextColorClashRound, COLOR_CLASH_COLORS } from '@/games/engines/colorClash';
 import { recordGameResult } from '@/lib/cardAcademyProgress';
 import './familyTable.css';

@@ -2,14 +2,15 @@ import React from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/appContext";
-import { hapticPulse } from "@/lib/haptics";
+import { hapticPulse, playSoundEffect } from "@/lib/haptics";
 
 // A single playing card. Supports color-blind suit indicators, large-card
 // mode, hold state, and accessible labels (never relies on color alone).
 export default function PlayingCard({ card, held = false, faceDown = false, onClick = undefined, size = "md", selected = false }) {
-  const { accessibility } = useApp();
+  const { accessibility, settings } = useApp();
   const handleClick = () => {
     hapticPulse(accessibility.haptics, 14, "selection");
+    playSoundEffect(settings.soundEffects !== false, "selection");
     onClick?.();
   };
   const large = accessibility.largeCardMode || size === "lg";

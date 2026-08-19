@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2, GraduationCap, Sparkles } from 'lucide-react';
 import GlassSurface from '@/components/premium/GlassSurface';
 import TactilePressable from '@/components/premium/TactilePressable';
+import SensoryControls from '@/components/premium/SensoryControls';
 import { getGame } from '@/games/catalog';
 import { getEngine } from '@/games/engineRegistry';
 import { markTutorialComplete } from '@/lib/cardAcademyProgress';
@@ -137,7 +138,7 @@ export default function GameTutorial() {
   return <div className="mx-auto min-h-screen max-w-3xl px-4 pb-28 pt-[max(1rem,env(safe-area-inset-top))] text-white">
     <div className="flex items-center justify-between gap-3">
       <button type="button" onClick={()=>navigate('/academy')} className="flex min-h-[44px] items-center gap-2 text-sm font-bold text-white/60"><ArrowLeft size={18}/>Academy</button>
-      <span className="rounded-full border border-amber-200/15 bg-amber-200/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-[.16em] hw-gold-text">Tutorial {stepIndex+1}/{steps.length}</span>
+      <div className="flex items-center gap-2"><SensoryControls/><span className="hidden rounded-full border border-amber-200/15 bg-amber-200/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-[.16em] hw-gold-text sm:inline-flex">Tutorial {stepIndex+1}/{steps.length}</span></div>
     </div>
 
     <div className="mt-5">

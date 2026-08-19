@@ -91,10 +91,10 @@ export default function VideoPokerTable({ game }) {
 
       {state.phase==='bet' && <div className="mt-3 grid grid-cols-[1fr_1.35fr] gap-3">
         <GlassSurface strength={2} className="rounded-2xl p-2"><p className="px-1 text-[9px] font-black uppercase tracking-[.16em] text-white/45">Credits</p><div className="mt-1 grid grid-cols-5 gap-1">{[1,2,3,4,5].map(credits=><TactilePressable key={credits} onClick={()=>apply({type:'set-credits',credits})} className={`rounded-lg py-2 text-xs font-black ${state.credits===credits?'bg-[hsl(var(--hw-gold))] text-[hsl(var(--hw-navy))]':'bg-white/5 text-white shadow-none'}`}>{credits}</TactilePressable>)}</div></GlassSurface>
-        <TactilePressable disabled={state.bankroll<state.credits} onClick={()=>apply({type:'deal'})} className="rounded-2xl bg-[hsl(var(--hw-gold))] text-lg font-black text-[hsl(var(--hw-navy))]"><Coins size={19} className="mr-2 inline"/>Deal</TactilePressable>
+        <TactilePressable disabled={state.bankroll<state.credits} onClick={()=>apply({type:'deal'})} soundType="deal" className="rounded-2xl bg-[hsl(var(--hw-gold))] text-lg font-black text-[hsl(var(--hw-navy))]"><Coins size={19} className="mr-2 inline"/>Deal</TactilePressable>
       </div>}
 
-      {state.phase==='hold' && <div className="mt-3 grid grid-cols-[.75fr_1.25fr] gap-3"><GlassSurface strength={2} className="flex min-h-[44px] items-center justify-center rounded-2xl px-3 py-3 text-xs font-black text-white/70">Held {state.holdMask.filter(Boolean).length} of 5</GlassSurface><TactilePressable onClick={()=>apply({type:'draw'})} className="rounded-2xl bg-[hsl(var(--hw-gold))] px-4 py-3.5 text-lg font-black text-[hsl(var(--hw-navy))]">Draw</TactilePressable></div>}
+      {state.phase==='hold' && <div className="mt-3 grid grid-cols-[.75fr_1.25fr] gap-3"><GlassSurface strength={2} className="flex min-h-[44px] items-center justify-center rounded-2xl px-3 py-3 text-xs font-black text-white/70">Held {state.holdMask.filter(Boolean).length} of 5</GlassSurface><TactilePressable onClick={()=>apply({type:'draw'})} soundType="deal" className="rounded-2xl bg-[hsl(var(--hw-gold))] px-4 py-3.5 text-lg font-black text-[hsl(var(--hw-navy))]">Draw</TactilePressable></div>}
 
       {state.phase==='result' && <div className="mt-3"><TactilePressable onClick={()=>apply({type:'new-hand'})} className="w-full rounded-2xl bg-[hsl(var(--hw-gold))] px-4 py-3.5 text-base font-black text-[hsl(var(--hw-navy))]"><Sparkles size={18} className="mr-2 inline"/>New Hand</TactilePressable></div>}
 

@@ -4,6 +4,7 @@ import { BookOpen, Flame, Play, Sparkles, Trophy, Zap } from 'lucide-react';
 import GlassSurface from '@/components/premium/GlassSurface';
 import TactilePressable from '@/components/premium/TactilePressable';
 import ScreenReveal, { RevealItem } from '@/components/premium/ScreenReveal';
+import SensoryControls from '@/components/premium/SensoryControls';
 import GameFamilyTile from '@/components/games/GameFamilyTile';
 import { CARD_ACADEMY_FAMILIES, CARD_ACADEMY_GAMES, gamesByFamily, getGame } from '@/games/catalog';
 import { loadCardAcademyProgress } from '@/lib/cardAcademyProgress';
@@ -45,9 +46,12 @@ export default function CardAcademyLobby() {
                   <h1 className="mt-2 font-heading text-3xl font-black tracking-tight text-[hsl(var(--hw-ink))] sm:text-4xl">HoldWise Card Academy</h1>
                   <p className="mt-2 max-w-2xl text-sm text-[hsl(var(--hw-ink)/.68)]">Twenty-one full card games. Learn the rules, play complete matches, understand the move, then master the table.</p>
                 </div>
-                <div className="hidden rounded-2xl border border-[hsl(var(--hw-royal)/.16)] bg-[hsl(0_0%_100%/.56)] p-3 text-center sm:block">
-                  <p className="text-2xl font-black hw-royal-text">{CARD_ACADEMY_GAMES.length}</p>
-                  <p className="text-[9px] uppercase tracking-[0.16em] text-[hsl(var(--hw-ink)/.55)]">full games</p>
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  <SensoryControls />
+                  <div className="hidden rounded-2xl border border-[hsl(var(--hw-royal)/.16)] bg-[hsl(0_0%_100%/.56)] p-3 text-center sm:block">
+                    <p className="text-2xl font-black hw-royal-text">{CARD_ACADEMY_GAMES.length}</p>
+                    <p className="text-[9px] uppercase tracking-[0.16em] text-[hsl(var(--hw-ink)/.55)]">full games</p>
+                  </div>
                 </div>
               </div>
 

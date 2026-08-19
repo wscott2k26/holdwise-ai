@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import GlassSurface from '@/components/premium/GlassSurface';
 import TactilePressable from '@/components/premium/TactilePressable';
 import AskCoachButton from '@/components/AskCoachButton';
+import SensoryControls from '@/components/premium/SensoryControls';
 
 export default function GameShell({ game, children, coachContext = null, actions = null }) {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ export default function GameShell({ game, children, coachContext = null, actions
           </div>
         </div>
         <div className="flex items-center gap-1.5">
+          <SensoryControls className="hidden sm:flex" />
           {actions}
           <TactilePressable onClick={() => navigate(`/game/${game?.id}/tutorial`)} className="hw-shell-icon rounded-xl p-2 shadow-none" aria-label={`Tutorial for ${game?.title || 'game'}`}><BookOpen size={18} /></TactilePressable>
           <TactilePressable onClick={() => navigate('/academy')} className="hw-shell-icon rounded-xl p-2 shadow-none" aria-label="Academy home"><Home size={18} /></TactilePressable>

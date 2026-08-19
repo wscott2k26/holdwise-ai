@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Home, BookOpen, Spade, GraduationCap, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/appContext";
-import { hapticPulse } from "@/lib/haptics";
+import { hapticPulse, playSoundEffect } from "@/lib/haptics";
 import GlassSurface from "@/components/premium/GlassSurface";
 
 const MotionNavLink = motion(NavLink);
@@ -18,7 +18,7 @@ const items = [
 ];
 
 export default function BottomNav() {
-  const { accessibility } = useApp();
+  const { accessibility, settings } = useApp();
   return (
     <div className="nav-bottom fixed inset-x-0 bottom-0 z-40 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))]">
       <GlassSurface
@@ -32,7 +32,10 @@ export default function BottomNav() {
           <MotionNavLink
             key={to}
             to={to}
-            onClick={() => hapticPulse(accessibility.haptics, 12, "selection")}
+            onClick={() => {
+              hapticPulse(accessibility.haptics, 12, "selection");
+              playSoundEffect(settings.soundEffects !== false, "selection");
+            }}
             whileTap={accessibility.reducedMotion ? { opacity: 0.86 } : { y: 2, scale: 0.98 }}
             transition={accessibility.reducedMotion ? { duration: 0.01 } : { type: "spring", stiffness: 500, damping: 34 }}
             className={({ isActive }) =>

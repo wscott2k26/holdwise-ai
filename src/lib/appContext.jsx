@@ -34,6 +34,7 @@ const defaultAccessibility = {
 };
 
 const defaultSettings = {
+  soundEffects: true,
   voiceEnabled: "ask-later", // enabled | text-only | ask-later
   theme: "light",
   mascot: "ace", // mascot id | "none"
