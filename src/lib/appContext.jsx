@@ -35,7 +35,7 @@ const defaultAccessibility = {
 
 const defaultSettings = {
   voiceEnabled: "ask-later", // enabled | text-only | ask-later
-  theme: "dark",
+  theme: "light",
   mascot: "ace", // mascot id | "none"
   notifications: {
     dailyLesson: true,

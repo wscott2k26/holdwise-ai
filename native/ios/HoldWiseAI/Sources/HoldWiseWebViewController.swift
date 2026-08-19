@@ -46,7 +46,7 @@ final class HoldWiseWebViewController: UIViewController, WKNavigationDelegate, W
         webView.scrollView.contentInsetAdjustmentBehavior = .never
         webView.scrollView.keyboardDismissMode = .interactive
         webView.isOpaque = false
-        webView.backgroundColor = UIColor(red: 0.035, green: 0.075, blue: 0.12, alpha: 1)
+        webView.backgroundColor = UIColor(red: 0.95, green: 0.97, blue: 1.00, alpha: 1)
         webView.scrollView.backgroundColor = webView.backgroundColor
 
         if #available(iOS 16.4, *) {

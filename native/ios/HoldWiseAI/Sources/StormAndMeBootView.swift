@@ -95,14 +95,14 @@ final class StormAndMeBootView: UIView {
     }
 
     private func configureView() {
-        backgroundColor = UIColor(red: 0.018, green: 0.043, blue: 0.067, alpha: 1)
+        backgroundColor = UIColor(red: 0.95, green: 0.97, blue: 1.00, alpha: 1)
         translatesAutoresizingMaskIntoConstraints = false
         accessibilityViewIsModal = true
 
         let halo = CAGradientLayer()
         halo.name = "stormandmeHalo"
         halo.colors = [
-            UIColor(red: 0.05, green: 0.36, blue: 0.36, alpha: 0.20).cgColor,
+            UIColor(red: 0.45, green: 0.87, blue: 0.88, alpha: 0.34).cgColor,
             UIColor.clear.cgColor,
         ]
         halo.startPoint = CGPoint(x: 0.5, y: 0.25)
@@ -116,30 +116,30 @@ final class StormAndMeBootView: UIView {
         markContainer.layer.addSublayer(boltLayer)
 
         glowLayer.fillColor = UIColor.clear.cgColor
-        glowLayer.strokeColor = UIColor(red: 0.16, green: 0.78, blue: 0.72, alpha: 0.42).cgColor
+        glowLayer.strokeColor = UIColor(red: 0.46, green: 0.83, blue: 0.94, alpha: 0.46).cgColor
         glowLayer.lineWidth = 12
         glowLayer.lineCap = .round
         glowLayer.lineJoin = .round
-        glowLayer.shadowColor = UIColor(red: 0.18, green: 0.82, blue: 0.77, alpha: 1).cgColor
+        glowLayer.shadowColor = UIColor(red: 0.51, green: 0.43, blue: 0.96, alpha: 1).cgColor
         glowLayer.shadowRadius = 18
         glowLayer.shadowOpacity = 0.55
         glowLayer.shadowOffset = .zero
 
         cloudLayer.fillColor = UIColor.clear.cgColor
-        cloudLayer.strokeColor = UIColor(red: 0.73, green: 0.96, blue: 0.94, alpha: 0.94).cgColor
+        cloudLayer.strokeColor = UIColor(red: 0.30, green: 0.40, blue: 0.91, alpha: 0.94).cgColor
         cloudLayer.lineWidth = 3.2
         cloudLayer.lineCap = .round
         cloudLayer.lineJoin = .round
 
-        boltLayer.fillColor = UIColor(red: 0.93, green: 0.76, blue: 0.38, alpha: 1).cgColor
-        boltLayer.shadowColor = UIColor(red: 0.96, green: 0.78, blue: 0.36, alpha: 1).cgColor
+        boltLayer.fillColor = UIColor(red: 0.98, green: 0.76, blue: 0.27, alpha: 1).cgColor
+        boltLayer.shadowColor = UIColor(red: 0.98, green: 0.60, blue: 0.38, alpha: 1).cgColor
         boltLayer.shadowRadius = 10
         boltLayer.shadowOpacity = 0.75
         boltLayer.shadowOffset = .zero
 
         companyLabel.translatesAutoresizingMaskIntoConstraints = false
         companyLabel.text = "STORM AND ME"
-        companyLabel.textColor = .white
+        companyLabel.textColor = UIColor(red: 0.05, green: 0.11, blue: 0.24, alpha: 1)
         companyLabel.textAlignment = .center
         companyLabel.font = .systemFont(ofSize: 21, weight: .semibold)
         companyLabel.adjustsFontForContentSizeCategory = true
@@ -147,14 +147,14 @@ final class StormAndMeBootView: UIView {
         addSubview(companyLabel)
 
         productLabel.translatesAutoresizingMaskIntoConstraints = false
-        productLabel.textColor = UIColor(red: 0.79, green: 0.86, blue: 0.90, alpha: 1)
+        productLabel.textColor = UIColor(red: 0.23, green: 0.31, blue: 0.48, alpha: 1)
         productLabel.textAlignment = .center
         productLabel.font = .systemFont(ofSize: 14, weight: .medium)
         productLabel.adjustsFontForContentSizeCategory = true
         addSubview(productLabel)
 
         messageLabel.translatesAutoresizingMaskIntoConstraints = false
-        messageLabel.textColor = .white
+        messageLabel.textColor = UIColor(red: 0.05, green: 0.11, blue: 0.24, alpha: 1)
         messageLabel.textAlignment = .center
         messageLabel.numberOfLines = 0
         messageLabel.font = .systemFont(ofSize: 17, weight: .semibold)
@@ -162,7 +162,7 @@ final class StormAndMeBootView: UIView {
         addSubview(messageLabel)
 
         detailsLabel.translatesAutoresizingMaskIntoConstraints = false
-        detailsLabel.textColor = UIColor(white: 0.78, alpha: 1)
+        detailsLabel.textColor = UIColor(red: 0.27, green: 0.34, blue: 0.48, alpha: 1)
         detailsLabel.textAlignment = .center
         detailsLabel.numberOfLines = 0
         detailsLabel.font = .monospacedSystemFont(ofSize: 11, weight: .regular)
@@ -171,9 +171,9 @@ final class StormAndMeBootView: UIView {
 
         retryButton.translatesAutoresizingMaskIntoConstraints = false
         retryButton.setTitle("Retry", for: .normal)
-        retryButton.setTitleColor(UIColor(red: 0.04, green: 0.09, blue: 0.12, alpha: 1), for: .normal)
+        retryButton.setTitleColor(.white, for: .normal)
         retryButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
-        retryButton.backgroundColor = UIColor(red: 0.91, green: 0.76, blue: 0.42, alpha: 1)
+        retryButton.backgroundColor = UIColor(red: 0.30, green: 0.40, blue: 0.91, alpha: 1)
         retryButton.layer.cornerRadius = 12
         retryButton.contentEdgeInsets = UIEdgeInsets(top: 12, left: 24, bottom: 12, right: 24)
         retryButton.addTarget(self, action: #selector(retryTapped), for: .touchUpInside)
