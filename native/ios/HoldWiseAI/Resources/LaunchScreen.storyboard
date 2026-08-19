@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="23094" targetRuntime="iOS.CocoaTouch" useAutolayout="YES" launchScreen="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="VC">
-  <device id="retina6_12" orientation="portrait" appearance="dark"/>
+  <device id="retina6_12" orientation="portrait" appearance="light"/>
   <dependencies><plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23084"/><capability name="Safe area layout guides" minToolsVersion="9.0"/></dependencies>
   <scenes>
     <scene sceneID="scene"><objects>
       <viewController id="VC" sceneMemberID="viewController"><view key="view" contentMode="scaleToFill" id="root">
         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
         <subviews>
-          <label opaque="NO" userInteractionEnabled="NO" contentMode="left" text="A♠" textAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="ace"><fontDescription key="fontDescription" type="system" weight="bold" pointSize="72"/><color key="textColor" red="0.894" green="0.749" blue="0.392" alpha="1" colorSpace="custom" customColorSpace="sRGB"/></label>
-          <label opaque="NO" userInteractionEnabled="NO" contentMode="left" text="HoldWise AI" textAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="title"><fontDescription key="fontDescription" type="system" weight="semibold" pointSize="29"/><color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/></label>
-          <label opaque="NO" userInteractionEnabled="NO" contentMode="left" text="Learn every card. Understand every hold." textAlignment="center" numberOfLines="2" translatesAutoresizingMaskIntoConstraints="NO" id="tag"><fontDescription key="fontDescription" type="system" pointSize="15"/><color key="textColor" white="0.78" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/></label>
+          <label opaque="NO" userInteractionEnabled="NO" contentMode="left" text="⚡" textAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="ace"><fontDescription key="fontDescription" type="system" weight="bold" pointSize="72"/><color key="textColor" red="0.30" green="0.40" blue="0.91" alpha="1" colorSpace="custom" customColorSpace="sRGB"/></label>
+          <label opaque="NO" userInteractionEnabled="NO" contentMode="left" text="HoldWise AI" textAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="title"><fontDescription key="fontDescription" type="system" weight="semibold" pointSize="29"/><color key="textColor" red="0.05" green="0.11" blue="0.24" alpha="1" colorSpace="custom" customColorSpace="sRGB"/></label>
+          <label opaque="NO" userInteractionEnabled="NO" contentMode="left" text="STORM AND ME" textAlignment="center" numberOfLines="2" translatesAutoresizingMaskIntoConstraints="NO" id="tag"><fontDescription key="fontDescription" type="system" weight="semibold" pointSize="15"/><color key="textColor" red="0.23" green="0.31" blue="0.48" alpha="1" colorSpace="custom" customColorSpace="sRGB"/></label>
         </subviews>
         <viewLayoutGuide key="safeArea" id="safe"/>
-        <color key="backgroundColor" red="0.027" green="0.075" blue="0.122" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        <color key="backgroundColor" red="0.95" green="0.97" blue="1.00" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         <constraints>
           <constraint firstItem="ace" firstAttribute="centerX" secondItem="safe" secondAttribute="centerX" id="c1"/>
           <constraint firstItem="ace" firstAttribute="centerY" secondItem="safe" secondAttribute="centerY" constant="-62" id="c2"/>

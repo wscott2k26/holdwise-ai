@@ -51,3 +51,15 @@ test('native boot and web shell start on visibly light pearl surfaces', () => {
   assert.match(controller, /backgroundColor = UIColor\(red: 0\.95, green: 0\.97, blue: 1\.00, alpha: 1\)/);
   assert.match(boot, /companyLabel\.textColor = UIColor\(red: 0\.05, green: 0\.11, blue: 0\.24, alpha: 1\)/);
 });
+
+test('generated iOS project preserves modern full-screen launch metadata and a light launch frame', () => {
+  const project = read('native/ios/HoldWiseAI/project.yml');
+  const plist = read('native/ios/HoldWiseAI/Resources/Info.plist');
+  const launch = read('native/ios/HoldWiseAI/Resources/LaunchScreen.storyboard');
+
+  assert.match(project, /INFOPLIST_FILE:\s*Resources\/Info\.plist/);
+  assert.doesNotMatch(project, /\n\s*info:\s*\n\s*path:\s*Resources\/Info\.plist/);
+  assert.match(plist, /<key>UILaunchStoryboardName<\/key><string>LaunchScreen<\/string>/);
+  assert.match(launch, /appearance="light"/);
+  assert.match(launch, /red="0\.95" green="0\.97" blue="1\.00"/);
+});
