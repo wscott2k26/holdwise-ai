@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -159,6 +159,7 @@ jobs:
 
           echo "runtime_smoke=PASS native ready marker present"
           test "$(cat "$READY_MARKER")" = "ready"
+          printf 'PASS\n' > "$RUNNER_TEMP/runtime-pass.txt"
           xcrun simctl shutdown "$DEVICE" >/dev/null 2>&1 || true
 
       - name: Upload runtime diagnostics
@@ -278,3 +279,47 @@ jobs:
           path: ${{ env.ZIP_PATH }}
           if-no-files-found: error
           retention-days: 7
+
+      - name: Persist last-mile receipt to branch
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .release
+          STATUS_FILE=".release/appetize-last-mile-${GITHUB_SHA}.txt"
+          APPETIZE_STATUS="FAIL_OR_NOT_REACHED"
+          APPETIZE_LINK=""
+          RUNTIME_STATUS="FAIL_OR_NOT_REACHED"
+          PACKAGE_STATUS="FAIL_OR_NOT_REACHED"
+
+          if [[ -f "$RUNNER_TEMP/appetize-link.txt" ]]; then
+            APPETIZE_STATUS="PASS"
+            APPETIZE_LINK="$(cat "$RUNNER_TEMP/appetize-link.txt")"
+          fi
+          if [[ -f "$RUNNER_TEMP/runtime-pass.txt" ]]; then
+            RUNTIME_STATUS="PASS"
+          fi
+          if [[ -n "${ZIP_PATH:-}" && -f "${ZIP_PATH:-}" ]]; then
+            PACKAGE_STATUS="PASS"
+          fi
+
+          cat > "$STATUS_FILE" <<EOF
+          HoldWise Appetize Last Mile
+          source_sha=$GITHUB_SHA
+          job_status=${{ job.status }}
+          runtime_smoke=$RUNTIME_STATUS
+          package_zip=$PACKAGE_STATUS
+          appetize_ingestion=$APPETIZE_STATUS
+          appetize_link=$APPETIZE_LINK
+          bundle_id=com.willywill.holdwiseai
+          version=1.4.0
+          EOF
+
+          cat "$STATUS_FILE"
+          git config user.name 'HoldWise Release Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add "$STATUS_FILE"
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: record Appetize last-mile receipt ${GITHUB_SHA::7} [skip ci]"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
