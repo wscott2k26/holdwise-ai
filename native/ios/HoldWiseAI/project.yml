@@ -35,7 +35,6 @@ targets:
         INFOPLIST_FILE: Resources/Info.plist
         PRODUCT_BUNDLE_IDENTIFIER: com.willywill.holdwiseai
         PRODUCT_NAME: HoldWise AI
-        CODE_SIGNING_ALLOWED: NO
     scheme:
       gatherCoverageData: false
 
