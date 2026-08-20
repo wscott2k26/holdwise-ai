@@ -1,0 +1,153 @@
+workflows:
+  holdwise-ios-testflight:
+    name: HoldWise AI 1.4.0 Signed IPA + TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 120
+
+    integrations:
+      app_store_connect: Codemagic LingoDuel
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: feature/holdwise-light-premium-v6
+          include: true
+          source: true
+
+    environment:
+      xcode: latest
+      node: 22
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.willywill.holdwiseai
+      vars:
+        BUNDLE_ID: com.willywill.holdwiseai
+        APP_NAME: HoldWise AI
+        XCODE_PROJECT: native/ios/HoldWiseAI/HoldWiseAI.xcodeproj
+        XCODE_SCHEME: HoldWiseAI
+        MARKETING_VERSION: 1.4.0
+        APPLE_TEAM_ID: CY5N965N53
+
+    cache:
+      cache_paths:
+        - $HOME/.npm
+
+    scripts:
+      - name: Show build environment
+        script: |
+          set -euo pipefail
+          node --version
+          npm --version
+          xcodebuild -version
+          swift --version
+
+      - name: Rehydrate and verify sealed course data
+        script: |
+          set -euo pipefail
+          base64 -D -i .appetize/full-data/lessons.b64 | gunzip > src/lib/lessons.js
+          cat .appetize/full-data/academy.part.* | base64 -D | gunzip > src/lib/academy.js
+          test "$(shasum -a 256 src/lib/lessons.js | awk '{print $1}')" = "ada157e544ed0fa5c578367e21172cf1c925df1af048881a453c336739a5c532"
+          test "$(shasum -a 256 src/lib/academy.js | awk '{print $1}')" = "5dd515383d75bdd842a56f9cf2adfd8a6536a76ca3200b0b1fa560cfcddfd282"
+
+      - name: Install web dependencies
+        script: |
+          set -euo pipefail
+          npm install --no-audit --no-fund
+
+      - name: Run complete HoldWise QA
+        script: |
+          set -euo pipefail
+          npm run test
+          npm run lint
+          npm run typecheck
+          npm run build
+          npm run audit:gameplay
+
+      - name: Bundle hardened native web application
+        script: |
+          set -euo pipefail
+          bash native/ios/HoldWiseAI/Scripts/prepare_web.sh
+          node scripts/verify-native-web.mjs native/ios/HoldWiseAI/Resources/www
+
+      - name: Install XcodeGen and generate project
+        script: |
+          set -euo pipefail
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install xcodegen
+          fi
+          cd native/ios/HoldWiseAI
+          xcodegen generate --spec project.yml
+          test -d HoldWiseAI.xcodeproj
+
+      - name: Apply App Store signing profiles
+        script: |
+          set -euo pipefail
+          xcode-project use-profiles \
+            --project "$CM_BUILD_DIR/$XCODE_PROJECT"
+
+      - name: Pin release version and unique build number
+        script: |
+          set -euo pipefail
+          PLIST="$CM_BUILD_DIR/native/ios/HoldWiseAI/Resources/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $MARKETING_VERSION" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$PLIST"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PLIST"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$PLIST"
+
+      - name: Build signed App Store IPA
+        script: |
+          set -euo pipefail
+          xcode-project build-ipa \
+            --project "$CM_BUILD_DIR/$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+
+      - name: Quad-check signed IPA identity and signature
+        script: |
+          set -euo pipefail
+          IPA_PATH="$(find build/ios/ipa -name '*.ipa' -print -quit)"
+          test -n "$IPA_PATH"
+          rm -rf /tmp/holdwise-ipa-check
+          mkdir -p /tmp/holdwise-ipa-check
+          unzip -q "$IPA_PATH" -d /tmp/holdwise-ipa-check
+          APP_PATH="$(find /tmp/holdwise-ipa-check/Payload -maxdepth 1 -name '*.app' -print -quit)"
+          test -n "$APP_PATH"
+
+          DISPLAY="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$APP_PATH/Info.plist")"
+          BUNDLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP_PATH/Info.plist")"
+          VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP_PATH/Info.plist")"
+          BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP_PATH/Info.plist")"
+          EXE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP_PATH/Info.plist")"
+          ARCHS="$(lipo -archs "$APP_PATH/$EXE")"
+
+          echo "display=$DISPLAY"
+          echo "bundle=$BUNDLE"
+          echo "version=$VERSION"
+          echo "build=$BUILD"
+          echo "architectures=$ARCHS"
+
+          test "$DISPLAY" = "HoldWise AI"
+          test "$BUNDLE" = "$BUNDLE_ID"
+          test "$VERSION" = "$MARKETING_VERSION"
+          test "$BUILD" = "$BUILD_NUMBER"
+          [[ " $ARCHS " == *" arm64 "* ]]
+          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+
+          security cms -D -i "$APP_PATH/embedded.mobileprovision" > /tmp/holdwise-profile.plist
+          PROFILE_TEAM="$(/usr/libexec/PlistBuddy -c 'Print :TeamIdentifier:0' /tmp/holdwise-profile.plist)"
+          test "$PROFILE_TEAM" = "$APPLE_TEAM_ID"
+
+          cp "$IPA_PATH" "$CM_BUILD_DIR/HoldWiseAI-${MARKETING_VERSION}-${BUILD_NUMBER}.ipa"
+          shasum -a 256 "$CM_BUILD_DIR/HoldWiseAI-${MARKETING_VERSION}-${BUILD_NUMBER}.ipa"
+
+    artifacts:
+      - HoldWiseAI-*.ipa
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: false
+        submit_to_app_store: false
