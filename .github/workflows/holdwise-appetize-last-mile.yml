@@ -1,0 +1,282 @@
+name: HoldWise Sensory v6 Appetize Last Mile
+
+on:
+  push:
+    branches:
+      - release/holdwise-last-mile-v6
+    paths:
+      - '.github/workflows/holdwise-appetize-last-mile.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+env:
+  LOCKED_SHA: 16e0eada69df6e7f7923ef32b688ada74a476d86
+  LOCKED_BRANCH: feature/holdwise-light-premium-v6
+  LOCKED_RUN_NUMBER: '103'
+  LOCKED_WORKFLOW: Appetize Simulator Build
+  LOCKED_ARTIFACT: HoldWise-AI-Appetize-Simulator-v1.4.0
+  EXPECTED_BUNDLE_ID: com.willywill.holdwiseai
+  EXPECTED_VERSION: 1.4.0
+  EXPECTED_BUILD: '1'
+  STATUS_FILE: .release/appetize-v6-status.txt
+
+jobs:
+  upload-appetize:
+    name: Verify exact green artifact and upload to Appetize
+    runs-on: macos-15
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      APPETIZE_TOKEN_PRIMARY: ${{ secrets.APPETIZE_API_TOKEN }}
+      APPETIZE_TOKEN_ALT: ${{ secrets.APPETIZE_TOKEN }}
+      APPETIZE_TOKEN_ALT2: ${{ secrets.APPETIZE_API }}
+      APPETIZE_PUBLIC_KEY_SECRET: ${{ secrets.APPETIZE_PUBLIC_KEY }}
+      APPETIZE_PUBLIC_KEY_VAR: ${{ vars.APPETIZE_PUBLIC_KEY }}
+    steps:
+      - name: Checkout isolated last-mile branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen sensory source and exact run 103 artifact
+        id: verify
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p .release "$RUNNER_TEMP/holdwise-artifact" "$RUNNER_TEMP/holdwise-unpack"
+
+          fail_receipt() {
+            local reason="$1"
+            cat > "$STATUS_FILE" <<EOF
+          HoldWise sensory v6 Appetize receipt
+          overall=BLOCKED
+          reason=$reason
+          source_branch=$LOCKED_BRANCH
+          source_sha=$LOCKED_SHA
+          source_run_number=$LOCKED_RUN_NUMBER
+          artifact_name=$LOCKED_ARTIFACT
+          physical_device_qa=PENDING
+          testflight=PENDING
+          EOF
+            exit 1
+          }
+
+          git cat-file -e "$LOCKED_SHA^{commit}" || fail_receipt LOCKED_SHA_NOT_FOUND
+          CHANGED="$(git diff --name-only "$LOCKED_SHA"..HEAD | grep -Ev '^(.github/workflows/holdwise-appetize-last-mile.yml|.release/appetize-v6-status.txt)$' || true)"
+          if [[ -n "$CHANGED" ]]; then
+            echo "Unexpected source drift relative to locked sensory commit:"
+            echo "$CHANGED"
+            fail_receipt RELEASE_BRANCH_SOURCE_DRIFT
+          fi
+
+          RUN_JSON="$RUNNER_TEMP/run.json"
+          gh run list \
+            --repo "$GITHUB_REPOSITORY" \
+            --workflow "$LOCKED_WORKFLOW" \
+            --branch "$LOCKED_BRANCH" \
+            --limit 100 \
+            --json databaseId,number,headSha,conclusion,status,workflowName,url \
+            > "$RUN_JSON"
+
+          RUN_ID="$(jq -r --argjson n "$LOCKED_RUN_NUMBER" --arg sha "$LOCKED_SHA" --arg wf "$LOCKED_WORKFLOW" '.[] | select(.number==$n and .headSha==$sha and .workflowName==$wf and .conclusion=="success") | .databaseId' "$RUN_JSON" | head -n1)"
+          RUN_URL="$(jq -r --argjson n "$LOCKED_RUN_NUMBER" --arg sha "$LOCKED_SHA" --arg wf "$LOCKED_WORKFLOW" '.[] | select(.number==$n and .headSha==$sha and .workflowName==$wf and .conclusion=="success") | .url' "$RUN_JSON" | head -n1)"
+          if [[ -z "$RUN_ID" || "$RUN_ID" == "null" ]]; then
+            jq -c '.[] | select(.number==103)' "$RUN_JSON" || true
+            fail_receipt EXACT_GREEN_RUN_103_NOT_FOUND
+          fi
+
+          gh run download "$RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$LOCKED_ARTIFACT" \
+            --dir "$RUNNER_TEMP/holdwise-artifact" \
+            || fail_receipt LOCKED_RUN_ARTIFACT_DOWNLOAD_FAILED
+
+          ZIP="$(find "$RUNNER_TEMP/holdwise-artifact" -type f -name '*.zip' -print -quit)"
+          [[ -n "$ZIP" ]] || fail_receipt APPETIZE_ZIP_NOT_FOUND
+          unzip -t "$ZIP"
+          unzip -q "$ZIP" -d "$RUNNER_TEMP/holdwise-unpack"
+          APP="$(find "$RUNNER_TEMP/holdwise-unpack" -type d -name '*.app' -print -quit)"
+          [[ -n "$APP" ]] || fail_receipt IOS_SIMULATOR_APP_NOT_FOUND
+
+          PLIST="$APP/Info.plist"
+          [[ -f "$PLIST" ]] || fail_receipt INFO_PLIST_NOT_FOUND
+          BUNDLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$PLIST")"
+          VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PLIST")"
+          BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$PLIST")"
+          EXE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$PLIST")"
+          [[ "$BUNDLE" == "$EXPECTED_BUNDLE_ID" ]] || fail_receipt BUNDLE_ID_MISMATCH
+          [[ "$VERSION" == "$EXPECTED_VERSION" ]] || fail_receipt MARKETING_VERSION_MISMATCH
+          [[ "$BUILD" == "$EXPECTED_BUILD" ]] || fail_receipt BUILD_NUMBER_MISMATCH
+          [[ -x "$APP/$EXE" ]] || fail_receipt IOS_EXECUTABLE_MISSING
+          ARCHS="$(lipo -archs "$APP/$EXE")"
+          [[ " $ARCHS " == *' arm64 '* ]] || fail_receipt ARM64_SIMULATOR_ARCH_MISSING
+
+          ZIP_SHA="$(shasum -a 256 "$ZIP" | awk '{print $1}')"
+          echo "ZIP_PATH=$ZIP" >> "$GITHUB_ENV"
+          echo "ZIP_SHA=$ZIP_SHA" >> "$GITHUB_ENV"
+          echo "SOURCE_RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
+          echo "SOURCE_RUN_URL=$RUN_URL" >> "$GITHUB_ENV"
+          printf 'locked_source=%s\nrun_number=%s\nrun_id=%s\nbundle_id=%s\nversion=%s\nbuild=%s\narchitectures=%s\nzip_sha256=%s\n' \
+            "$LOCKED_SHA" "$LOCKED_RUN_NUMBER" "$RUN_ID" "$BUNDLE" "$VERSION" "$BUILD" "$ARCHS" "$ZIP_SHA"
+
+      - name: Upload or update HoldWise on Appetize and verify identity
+        id: appetize
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          write_blocked() {
+            local reason="$1"
+            cat > "$STATUS_FILE" <<EOF
+          HoldWise sensory v6 Appetize receipt
+          overall=BLOCKED
+          reason=$reason
+          source_branch=$LOCKED_BRANCH
+          source_sha=$LOCKED_SHA
+          source_run_number=$LOCKED_RUN_NUMBER
+          source_run_id=${SOURCE_RUN_ID:-unknown}
+          artifact_name=$LOCKED_ARTIFACT
+          artifact_sha256=${ZIP_SHA:-unknown}
+          bundle_id=$EXPECTED_BUNDLE_ID
+          marketing_version=$EXPECTED_VERSION
+          build_number=$EXPECTED_BUILD
+          physical_device_qa=PENDING
+          testflight=PENDING
+          EOF
+          }
+
+          TOKEN="${APPETIZE_TOKEN_PRIMARY:-}"
+          [[ -n "$TOKEN" ]] || TOKEN="${APPETIZE_TOKEN_ALT:-}"
+          [[ -n "$TOKEN" ]] || TOKEN="${APPETIZE_TOKEN_ALT2:-}"
+          if [[ -z "$TOKEN" ]]; then
+            write_blocked APPETIZE_API_TOKEN_MISSING
+            exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+
+          PUBLIC_KEY="${APPETIZE_PUBLIC_KEY_SECRET:-}"
+          [[ -n "$PUBLIC_KEY" ]] || PUBLIC_KEY="${APPETIZE_PUBLIC_KEY_VAR:-}"
+
+          if [[ -z "$PUBLIC_KEY" ]]; then
+            LIST_JSON="$RUNNER_TEMP/appetize-apps.json"
+            HTTP="$(curl -sS -o "$LIST_JSON" -w '%{http_code}' \
+              -H "X-API-KEY: $TOKEN" \
+              https://api.appetize.io/v1/apps/all || true)"
+            if [[ "$HTTP" == "200" ]]; then
+              PUBLIC_KEY="$(jq -r --arg bundle "$EXPECTED_BUNDLE_ID" '.data[]? | select(.platform=="ios" and .bundle==$bundle) | .publicKey' "$LIST_JSON" | head -n1)"
+            fi
+          fi
+
+          RESPONSE="$RUNNER_TEMP/appetize-upload.json"
+          if [[ -n "$PUBLIC_KEY" ]]; then
+            TARGET="https://api.appetize.io/v1/apps/$PUBLIC_KEY"
+            MODE=update
+          else
+            TARGET="https://api.appetize.io/v1/apps"
+            MODE=create
+          fi
+
+          HTTP="$(curl -sS -o "$RESPONSE" -w '%{http_code}' \
+            -X POST "$TARGET" \
+            -H "X-API-KEY: $TOKEN" \
+            -F "file=@$ZIP_PATH" \
+            -F "platform=ios" \
+            -F "note=HoldWise sensory v6 | source $LOCKED_SHA | Actions run #$LOCKED_RUN_NUMBER")"
+
+          if [[ ! "$HTTP" =~ ^2 ]]; then
+            echo "Appetize upload HTTP status: $HTTP"
+            jq -c '{error,message}' "$RESPONSE" 2>/dev/null || true
+            write_blocked "APPETIZE_UPLOAD_HTTP_$HTTP"
+            exit 1
+          fi
+
+          RESPONSE_KEY="$(jq -r '.publicKey // empty' "$RESPONSE" 2>/dev/null || true)"
+          [[ -n "$RESPONSE_KEY" ]] && PUBLIC_KEY="$RESPONSE_KEY"
+          if [[ -z "$PUBLIC_KEY" ]]; then
+            write_blocked APPETIZE_PUBLIC_KEY_MISSING_AFTER_UPLOAD
+            exit 1
+          fi
+
+          VERIFY="$RUNNER_TEMP/appetize-verify.json"
+          VERIFIED=0
+          for _ in $(seq 1 18); do
+            GET_HTTP="$(curl -sS -o "$VERIFY" -w '%{http_code}' \
+              -H "X-API-KEY: $TOKEN" \
+              "https://api.appetize.io/v1/apps/$PUBLIC_KEY" || true)"
+            if [[ "$GET_HTTP" == "200" ]]; then
+              REMOTE_PLATFORM="$(jq -r '.platform // empty' "$VERIFY")"
+              REMOTE_BUNDLE="$(jq -r '.bundle // empty' "$VERIFY")"
+              REMOTE_VERSION="$(jq -r '.appVersionName // empty' "$VERIFY")"
+              REMOTE_BUILD="$(jq -r '.appVersionCode // empty' "$VERIFY")"
+              if [[ "$REMOTE_PLATFORM" == "ios" && "$REMOTE_BUNDLE" == "$EXPECTED_BUNDLE_ID" && "$REMOTE_VERSION" == "$EXPECTED_VERSION" && "$REMOTE_BUILD" == "$EXPECTED_BUILD" ]]; then
+                VERIFIED=1
+                break
+              fi
+            fi
+            sleep 5
+          done
+
+          if [[ "$VERIFIED" != "1" ]]; then
+            jq -c '{publicKey,platform,bundle,appVersionName,appVersionCode,versionCode}' "$VERIFY" 2>/dev/null || true
+            write_blocked APPETIZE_POST_UPLOAD_IDENTITY_NOT_VERIFIED
+            exit 1
+          fi
+
+          cat > "$STATUS_FILE" <<EOF
+          HoldWise sensory v6 Appetize receipt
+          overall=PASS
+          upload_mode=$MODE
+          source_branch=$LOCKED_BRANCH
+          source_sha=$LOCKED_SHA
+          source_run_number=$LOCKED_RUN_NUMBER
+          source_run_id=$SOURCE_RUN_ID
+          source_run_url=$SOURCE_RUN_URL
+          artifact_name=$LOCKED_ARTIFACT
+          artifact_sha256=$ZIP_SHA
+          bundle_id=$EXPECTED_BUNDLE_ID
+          marketing_version=$EXPECTED_VERSION
+          build_number=$EXPECTED_BUILD
+          appetize_public_key=$PUBLIC_KEY
+          appetize_api_identity=PASS
+          physical_device_qa=PENDING
+          testflight=PENDING
+          EOF
+          cat "$STATUS_FILE"
+
+      - name: Persist last-mile receipt without touching app source
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f "$STATUS_FILE" ]]; then
+            mkdir -p .release
+            cat > "$STATUS_FILE" <<EOF
+          HoldWise sensory v6 Appetize receipt
+          overall=BLOCKED
+          reason=WORKFLOW_FAILED_BEFORE_RECEIPT
+          source_branch=$LOCKED_BRANCH
+          source_sha=$LOCKED_SHA
+          source_run_number=$LOCKED_RUN_NUMBER
+          physical_device_qa=PENDING
+          testflight=PENDING
+          EOF
+          fi
+
+          git config user.name 'HoldWise Release Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add "$STATUS_FILE"
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore: record HoldWise v6 Appetize last-mile status [skip ci]'
+            git push origin HEAD:release/holdwise-last-mile-v6
+          fi
+
+      - name: Enforce Appetize gate
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q '^overall=PASS$' "$STATUS_FILE"
+          grep -q '^appetize_api_identity=PASS$' "$STATUS_FILE"
