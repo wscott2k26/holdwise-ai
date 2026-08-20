@@ -1,0 +1,9 @@
+HoldWise Appetize Last Mile
+source_sha=c0acc9e7f90c33f0de1649a5dd9fc26c79e6e3f1
+job_status=failure
+runtime_smoke=PASS
+package_zip=PASS
+appetize_ingestion=FAIL_OR_NOT_REACHED
+appetize_link=
+bundle_id=com.willywill.holdwiseai
+version=1.4.0
