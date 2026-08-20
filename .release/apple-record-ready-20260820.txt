@@ -1,0 +1,3 @@
+HoldWise AI Apple release gate opened.
+App Store Connect app record created for bundle com.willywill.holdwiseai.
+Trigger fresh Appetize + TestFlight release after credentials and app record are present.
