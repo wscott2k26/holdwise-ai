@@ -80,6 +80,23 @@ workflows:
           xcodegen generate --spec project.yml
           test -d HoldWiseAI.xcodeproj
 
+      - name: Initialize signing keychain
+        script: |
+          set -euo pipefail
+          keychain initialize
+
+      - name: Fetch or create App Store signing files
+        script: |
+          set -euo pipefail
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+
+      - name: Add signing certificates to keychain
+        script: |
+          set -euo pipefail
+          keychain add-certificates
+
       - name: Apply App Store signing profiles
         script: |
           set -euo pipefail
