@@ -1,0 +1,14 @@
+HoldWise sensory v6 Appetize receipt
+overall=BLOCKED
+reason=APPETIZE_API_TOKEN_MISSING
+source_branch=feature/holdwise-light-premium-v6
+source_sha=16e0eada69df6e7f7923ef32b688ada74a476d86
+source_run_number=103
+source_run_id=32264428352
+artifact_name=HoldWise-AI-Appetize-Simulator-v1.4.0
+artifact_sha256=19a36e8588752c31848dfac551c4f4e6228b94aa2e4583f8af32db2a10bc2011
+bundle_id=com.willywill.holdwiseai
+marketing_version=1.4.0
+build_number=1
+physical_device_qa=PENDING
+testflight=PENDING
