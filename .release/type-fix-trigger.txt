@@ -1,0 +1,2 @@
+HoldWise isolated type-contract verification trigger
+2026-08-20
