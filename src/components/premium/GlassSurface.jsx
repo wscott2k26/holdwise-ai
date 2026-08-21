@@ -16,6 +16,7 @@ const VARIANT = {
   modal: "hw-glass-modal",
 };
 
+/** @param {any} props */
 export default function GlassSurface({
   children,
   strength = 2,
@@ -25,8 +26,9 @@ export default function GlassSurface({
   className = "",
   ...props
 }) {
+  const Surface = /** @type {React.ElementType} */ (Component);
   return (
-    <Component
+    <Surface
       className={cn(
         STRENGTH[strength] || STRENGTH[2],
         VARIANT[variant] || "",
@@ -36,6 +38,6 @@ export default function GlassSurface({
       {...props}
     >
       {children}
-    </Component>
+    </Surface>
   );
 }

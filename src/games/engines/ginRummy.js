@@ -100,6 +100,7 @@ function discardActions(state,actor){
   }
   return actions;
 }
+/** @returns {any[]} */
 function legalActions(state,actor=state.actor){
   if(state.roundComplete||state.matchComplete||actor!==state.actor)return[];
   if(state.phase==='draw'){const actions=[];if(state.stock.length>2)actions.push({type:'draw-stock',actor});if(state.discard.length)actions.push({type:'draw-discard',actor,cardId:state.discard.at(-1).id});return actions;}

@@ -136,7 +136,7 @@ export function AppProvider({ children }) {
         }
       })
       .catch(() => setAuthReady(true));
-    return () => (active = false);
+    return () => { active = false; };
   }, []);
 
   // Hydrate registered learners from one cloud state record, then keep the

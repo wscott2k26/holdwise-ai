@@ -98,7 +98,8 @@ Respond as Coach Ace in 2-4 short friendly sentences. Stick strictly to the veri
       prompt,
       model: "gemini_3_flash",
     });
-    return { ok: true, text: typeof res === "string" ? res : res?.output || res?.text || JSON.stringify(res) };
+    const result = /** @type {any} */ (res);
+    return { ok: true, text: typeof res === "string" ? res : result?.output || result?.text || JSON.stringify(res) };
   } catch (e) {
     return {
       ok: false,

@@ -27,7 +27,7 @@ export default function TactilePressable({
 
   return (
     <motion.button
-      type={type}
+      type={/** @type {"button" | "submit" | "reset"} */ (type)}
       disabled={disabled}
       whileTap={reduced ? { opacity: 0.86 } : { y: 3, scale: 0.985 }}
       transition={reduced ? { duration: 0.01 } : { type: "spring", stiffness: 520, damping: 32 }}

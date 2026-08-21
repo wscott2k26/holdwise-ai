@@ -17,7 +17,7 @@ function rankFor(mascot) {
   return mascot.suitSymbol;
 }
 
-export default function Mascot({ mascotId = "ace", mood = "idle", size = 96, talking = false, draggable = false, onTap, className = "" }) {
+export default function Mascot({ mascotId = "ace", mood = "idle", size = 96, talking = false, draggable = false, onTap = undefined, className = "" }) {
   const { accessibility } = useApp();
   const reduce = useReducedMotion() || accessibility.reducedMotion;
   const mascot = getMascot(mascotId);

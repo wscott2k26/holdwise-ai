@@ -168,6 +168,7 @@ function createGame(options = {}) {
   };
 }
 
+/** @returns {any[]} */
 function legalActions(state) {
   if (state.phase === 'bet') {
     const actions = [{ type: 'set-bet', min: 1, max: Math.max(1, state.bankroll) }];
