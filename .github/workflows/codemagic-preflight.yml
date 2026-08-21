@@ -1,0 +1,100 @@
+name: HoldWise Codemagic Preflight
+
+on:
+  push:
+    branches:
+      - feature/holdwise-light-premium-v6
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  preflight:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Rehydrate sealed course data
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -D -i .appetize/full-data/lessons.b64 | gunzip > src/lib/lessons.js
+          cat .appetize/full-data/academy.part.* | base64 -D | gunzip > src/lib/academy.js
+          test "$(shasum -a 256 src/lib/lessons.js | awk '{print $1}')" = "ada157e544ed0fa5c578367e21172cf1c925df1af048881a453c336739a5c532"
+          test "$(shasum -a 256 src/lib/academy.js | awk '{print $1}')" = "5dd515383d75bdd842a56f9cf2adfd8a6536a76ca3200b0b1fa560cfcddfd282"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run Codemagic-equivalent QA and capture status
+        id: qa
+        shell: bash
+        run: |
+          set +e
+          LOG="$RUNNER_TEMP/codemagic-preflight.log"
+          : > "$LOG"
+          overall=0
+          run_gate() {
+            name="$1"; shift
+            echo "=== $name ===" | tee -a "$LOG"
+            "$@" 2>&1 | tee -a "$LOG"
+            status=${PIPESTATUS[0]}
+            echo "gate_${name// /_}=$status" >> "$GITHUB_OUTPUT"
+            if [[ $status -ne 0 ]]; then overall=$status; fi
+            return 0
+          }
+          run_gate test npm run test
+          run_gate lint npm run lint
+          run_gate typecheck npm run typecheck
+          run_gate build npm run build
+          run_gate gameplay_audit npm run audit:gameplay
+          echo "overall=$overall" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Persist preflight report
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/codemagic-preflight-${GITHUB_SHA}.txt"
+          LOG="$RUNNER_TEMP/codemagic-preflight.log"
+          {
+            echo "HoldWise Codemagic-equivalent Preflight"
+            echo "source_sha=$GITHUB_SHA"
+            echo "node=$(node --version)"
+            echo "test=${{ steps.qa.outputs.gate_test }}"
+            echo "lint=${{ steps.qa.outputs.gate_lint }}"
+            echo "typecheck=${{ steps.qa.outputs.gate_typecheck }}"
+            echo "build=${{ steps.qa.outputs.gate_build }}"
+            echo "gameplay_audit=${{ steps.qa.outputs.gate_gameplay_audit }}"
+            echo "overall=${{ steps.qa.outputs.overall }}"
+            echo
+            echo "=== failure summary ==="
+            grep -n -E '^(not ok|# fail )|error:|Error:|ERR_|FAILED|failed|failure' "$LOG" | tail -n 120 || true
+            echo
+            echo "=== tail ==="
+            tail -n 120 "$LOG" || true
+          } > "$OUT"
+          cat "$OUT"
+
+          git config user.name 'HoldWise QA Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git fetch origin "$GITHUB_REF_NAME"
+          git reset --hard "origin/$GITHUB_REF_NAME"
+          mkdir -p .release
+          cp "$OUT" ".release/codemagic-preflight-${GITHUB_SHA}.txt"
+          git add ".release/codemagic-preflight-${GITHUB_SHA}.txt"
+          git commit -m "chore: record Codemagic preflight ${GITHUB_SHA::7} [skip ci]"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Fail if any preflight gate failed
+        if: steps.qa.outputs.overall != '0'
+        run: exit 1
