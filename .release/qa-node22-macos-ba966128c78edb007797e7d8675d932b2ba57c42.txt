@@ -1,0 +1,56 @@
+HoldWise Node 22 macOS QA Diagnostic
+source_sha=ba966128c78edb007797e7d8675d932b2ba57c42
+node=v22.23.1
+core_test_exit=1
+
+=== failing TAP records ===
+639:not ok 107 - one-click release verifier accepts the package version shipped by this source tree
+644:  failureType: 'testCodeFailure'
+645:  error: |-
+662:  code: 'ERR_ASSERTION'
+664:  expected: 0
+665:  actual: 1
+666:  operator: 'strictEqual'
+1195:# tests 193
+1196:# suites 0
+1197:# pass 192
+1198:# fail 1
+1199:# cancelled 0
+1200:# skipped 0
+1201:# todo 0
+
+=== context around not ok ===
+--- lines 634-666 ---
+  ---
+  duration_ms: 0.53675
+  type: 'test'
+  ...
+# Subtest: one-click release verifier accepts the package version shipped by this source tree
+not ok 107 - one-click release verifier accepts the package version shipped by this source tree
+  ---
+  duration_ms: 41.693542
+  type: 'test'
+  location: '/Users/runner/work/holdwise-ai/holdwise-ai/tests/release-version.test.mjs:5:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    release verifier failed:
+    file:///Users/runner/work/holdwise-ai/holdwise-ai/scripts/verify-one-click-release.mjs:15
+      if (!fs.existsSync(path.join(root, item))) throw new Error(`Missing one-click release file: ${item}`);
+                                                       ^
+    
+    Error: Missing one-click release file: RUN-HOLDWISE-TO-TESTFLIGHT.ps1
+        at file:///Users/runner/work/holdwise-ai/holdwise-ai/scripts/verify-one-click-release.mjs:15:52
+        at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+        at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+        at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+    
+    Node.js v22.23.1
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
