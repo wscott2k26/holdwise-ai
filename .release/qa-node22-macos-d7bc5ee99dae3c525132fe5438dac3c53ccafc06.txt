@@ -1,0 +1,16 @@
+HoldWise Node 22 macOS QA Diagnostic
+source_sha=d7bc5ee99dae3c525132fe5438dac3c53ccafc06
+node=v22.23.1
+core_test_exit=0
+
+=== failing TAP records ===
+1161:# tests 193
+1162:# suites 0
+1163:# pass 193
+1164:# fail 0
+1165:# cancelled 0
+1166:# skipped 0
+1167:# todo 0
+
+=== context around not ok ===
+NO_NOT_OK_RECORD_FOUND
