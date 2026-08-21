@@ -1,0 +1,85 @@
+name: HoldWise QA Diagnostic
+
+on:
+  push:
+    branches:
+      - feature/holdwise-light-premium-v6
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Rehydrate sealed course data
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -D -i .appetize/full-data/lessons.b64 | gunzip > src/lib/lessons.js
+          cat .appetize/full-data/academy.part.* | base64 -D | gunzip > src/lib/academy.js
+          test "$(shasum -a 256 src/lib/lessons.js | awk '{print $1}')" = "ada157e544ed0fa5c578367e21172cf1c925df1af048881a453c336739a5c532"
+          test "$(shasum -a 256 src/lib/academy.js | awk '{print $1}')" = "5dd515383d75bdd842a56f9cf2adfd8a6536a76ca3200b0b1fa560cfcddfd282"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run core tests and capture exact failure
+        id: core
+        shell: bash
+        run: |
+          set +e
+          node --test tests/*.test.mjs 2>&1 | tee "$RUNNER_TEMP/holdwise-core-test.log"
+          STATUS=${PIPESTATUS[0]}
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Persist diagnostic report
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .release
+          OUT=".release/qa-node22-macos-${GITHUB_SHA}.txt"
+          LOG="$RUNNER_TEMP/holdwise-core-test.log"
+          {
+            echo "HoldWise Node 22 macOS QA Diagnostic"
+            echo "source_sha=$GITHUB_SHA"
+            echo "node=$(node --version)"
+            echo "core_test_exit=${{ steps.core.outputs.status }}"
+            echo
+            echo "=== failing TAP records ==="
+            grep -n -E '^(not ok|# fail |# tests |# pass |# suites |# cancelled |# skipped |# todo )|failureType:|error:|code:|operator:|actual:|expected:' "$LOG" || true
+            echo
+            echo "=== context around not ok ==="
+            python3 - "$LOG" <<'PY'
+          import sys
+          p=sys.argv[1]
+          lines=open(p,encoding='utf-8',errors='replace').read().splitlines()
+          hits=[i for i,l in enumerate(lines) if l.startswith('not ok ')]
+          if not hits:
+              print('NO_NOT_OK_RECORD_FOUND')
+          for i in hits:
+              a=max(0,i-5); b=min(len(lines),i+28)
+              print(f'--- lines {a+1}-{b} ---')
+              print('\n'.join(lines[a:b]))
+          PY
+          } > "$OUT"
+          cat "$OUT"
+          git config user.name 'HoldWise QA Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add "$OUT"
+          git commit -m "chore: record Node 22 QA diagnostic ${GITHUB_SHA::7} [skip ci]"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Fail if core QA failed
+        if: steps.core.outputs.status != '0'
+        run: exit 1
