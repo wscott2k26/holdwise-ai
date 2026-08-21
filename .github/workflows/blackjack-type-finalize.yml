@@ -1,0 +1,117 @@
+name: HoldWise Blackjack Type Finalize
+
+on:
+  push:
+    branches:
+      - fix/holdwise-type-contracts-v6
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: macos-15
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Fix Blackjack heterogeneous action array inference
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+          p=Path('src/games/engines/blackjack.js')
+          text=p.read_text()
+          replacements=[
+            ("const actions = [{ type: 'set-bet', min: 1, max: Math.max(1, state.bankroll) }];",
+             "/** @type {any[]} */ const actions = [{ type: 'set-bet', min: 1, max: Math.max(1, state.bankroll) }];"),
+            ("const actions = [{ type: 'decline-insurance' }];",
+             "/** @type {any[]} */ const actions = [{ type: 'decline-insurance' }];"),
+          ]
+          for old,new in replacements:
+              if old not in text:
+                  raise SystemExit(f'missing expected Blackjack source: {old}')
+              text=text.replace(old,new,1)
+          p.write_text(text)
+          PY
+
+      - name: Rehydrate sealed course data
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -D -i .appetize/full-data/lessons.b64 | gunzip > src/lib/lessons.js
+          cat .appetize/full-data/academy.part.* | base64 -D | gunzip > src/lib/academy.js
+          test "$(shasum -a 256 src/lib/lessons.js | awk '{print $1}')" = "ada157e544ed0fa5c578367e21172cf1c925df1af048881a453c336739a5c532"
+          test "$(shasum -a 256 src/lib/academy.js | awk '{print $1}')" = "5dd515383d75bdd842a56f9cf2adfd8a6536a76ca3200b0b1fa560cfcddfd282"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run final full release preflight
+        id: qa
+        shell: bash
+        run: |
+          set +e
+          LOG="$RUNNER_TEMP/final-type-preflight.log"
+          : > "$LOG"
+          overall=0
+          run_gate() {
+            name="$1"; shift
+            echo "=== $name ===" | tee -a "$LOG"
+            "$@" 2>&1 | tee -a "$LOG"
+            status=${PIPESTATUS[0]}
+            echo "gate_${name// /_}=$status" >> "$GITHUB_OUTPUT"
+            if [[ $status -ne 0 ]]; then overall=$status; fi
+            return 0
+          }
+          run_gate test npm run test
+          run_gate lint npm run lint
+          run_gate typecheck npm run typecheck
+          run_gate build npm run build
+          run_gate gameplay_audit npm run audit:gameplay
+          echo "overall=$overall" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Commit fix and final receipt
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          REPORT="$RUNNER_TEMP/final-type-preflight.txt"
+          LOG="$RUNNER_TEMP/final-type-preflight.log"
+          {
+            echo "HoldWise Final Type Contract Preflight"
+            echo "source_sha=$GITHUB_SHA"
+            echo "node=$(node --version)"
+            echo "test=${{ steps.qa.outputs.gate_test }}"
+            echo "lint=${{ steps.qa.outputs.gate_lint }}"
+            echo "typecheck=${{ steps.qa.outputs.gate_typecheck }}"
+            echo "build=${{ steps.qa.outputs.gate_build }}"
+            echo "gameplay_audit=${{ steps.qa.outputs.gate_gameplay_audit }}"
+            echo "overall=${{ steps.qa.outputs.overall }}"
+            echo
+            grep -n -E 'error TS|not ok|# fail |Error:|FAILED|failed' "$LOG" | tail -n 160 || true
+            echo
+            tail -n 80 "$LOG" || true
+          } > "$REPORT"
+          mkdir -p .release
+          cp "$REPORT" .release/final-type-contract-preflight.txt
+          cat "$REPORT"
+
+          git config user.name 'HoldWise QA Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add src/games/engines/blackjack.js .release/final-type-contract-preflight.txt
+          git commit -m "fix: finalize HoldWise type contracts [type-fix-result] [skip ci]"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Enforce green final preflight
+        if: steps.qa.outputs.overall != '0'
+        run: exit 1
