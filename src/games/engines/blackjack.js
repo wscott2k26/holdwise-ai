@@ -168,14 +168,15 @@ function createGame(options = {}) {
   };
 }
 
+/** @returns {any[]} */
 function legalActions(state) {
   if (state.phase === 'bet') {
-    const actions = [{ type: 'set-bet', min: 1, max: Math.max(1, state.bankroll) }];
+    /** @type {any[]} */ const actions = [{ type: 'set-bet', min: 1, max: Math.max(1, state.bankroll) }];
     if (state.bankroll >= state.bet && state.bet > 0) actions.push({ type: 'deal' });
     return actions;
   }
   if (state.phase === 'insurance') {
-    const actions = [{ type: 'decline-insurance' }];
+    /** @type {any[]} */ const actions = [{ type: 'decline-insurance' }];
     const wager = state.hands[0]?.wager / 2;
     if (state.rules.insurance && state.bankroll >= wager) actions.push({ type: 'take-insurance', amount: wager });
     return actions;

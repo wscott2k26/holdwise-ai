@@ -23,7 +23,7 @@ function fresh(id,seed=20260815,spiderSuits=1){
   return ENGINES[id].createGame({seed});
 }
 function keyOf(selection){return selection?JSON.stringify(selection):'';}
-function MiniCard({card,faceDown=false,selected=false,onClick,label}){
+function MiniCard({card,faceDown=false,selected=false,onClick=undefined,label=undefined}){
   if(!card||faceDown)return <button type="button" onClick={onClick} className="hw-solitaire-mini-card hw-solitaire-card-back" aria-label={label||'Face-down card'} />;
   return <button type="button" onClick={onClick} className={`hw-solitaire-mini-card p-1 text-left ${card.colorCategory==='red'?'red':''} ${selected?'selected':''}`} aria-label={label||card.label}><span className="text-[12px]">{card.displaySymbol}</span><span className="ml-0.5 text-[12px]">{card.suitSymbol}</span><span className="absolute inset-0 flex items-center justify-center text-xl opacity-90">{card.suitSymbol}</span></button>;
 }
@@ -92,7 +92,7 @@ export default function SolitaireTable({game}){
   </GameShell>;
 }
 
-function Foundation({card,suit,onClick,selected}){
+function Foundation({card,suit,onClick=undefined,selected=false}){
   const symbol=({hearts:'♥',diamonds:'♦',clubs:'♣',spades:'♠'})[suit];
   if(card)return <div className={`flex h-[62px] w-11 items-center justify-center rounded-lg ${selected?'hw-solitaire-action-glow':''}`}><MiniCard card={card} selected={selected} onClick={onClick}/></div>;
   return <button type="button" onClick={onClick} className={`hw-solitaire-slot flex h-[62px] w-11 items-center justify-center rounded-lg ${selected?'hw-solitaire-action-glow':''}`}><span className="text-lg text-white/18">{symbol}</span></button>;

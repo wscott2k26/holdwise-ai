@@ -16,7 +16,7 @@ const chipTotal = (state) => state.players.reduce((sum, player) => sum + player.
 const liveSeats = (state) => state.players.map((player, seat) => ({ player, seat })).filter(({ player }) => !player.folded);
 const fundedSeats = (players) => players.map((player, seat) => ({ player, seat })).filter(({ player }) => player.stack > 0).map(({ seat }) => seat);
 
-function nextSeat(players, from, predicate = () => true) {
+function nextSeat(players, from, predicate = (_player, _seat) => true) {
   for (let offset = 1; offset <= players.length; offset += 1) {
     const seat = (from + offset) % players.length;
     if (predicate(players[seat], seat)) return seat;
