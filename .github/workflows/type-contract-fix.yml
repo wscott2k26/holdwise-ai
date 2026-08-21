@@ -1,0 +1,178 @@
+name: HoldWise Type Contract Fix
+
+on:
+  push:
+    branches:
+      - fix/holdwise-type-contracts-v6
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix-and-verify:
+    if: ${{ github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[type-fix-result]') }}
+    runs-on: macos-15
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Apply runtime-neutral type contract repairs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new):
+              p=Path(path)
+              text=p.read_text()
+              if old not in text:
+                  raise SystemExit(f'missing expected source in {path}: {old[:100]!r}')
+              p.write_text(text.replace(old,new,1))
+
+          replace('src/components/mascot/Mascot.jsx',
+              'draggable = false, onTap, className = ""',
+              'draggable = false, onTap = undefined, className = ""')
+
+          replace('src/components/games/FamilyTable.jsx',
+              'function Opponents({players,actor,extra})',
+              'function Opponents({players,actor,extra=undefined})')
+          replace('src/components/games/FamilyTable.jsx',
+              'function ClashCard({card,selected,onClick})',
+              'function ClashCard({card,selected=false,onClick=undefined})')
+
+          replace('src/components/games/SolitaireTable.jsx',
+              'function MiniCard({card,faceDown=false,selected=false,onClick,label})',
+              'function MiniCard({card,faceDown=false,selected=false,onClick=undefined,label=undefined})')
+          replace('src/components/games/SolitaireTable.jsx',
+              'function Foundation({card,suit,onClick,selected})',
+              'function Foundation({card,suit,onClick=undefined,selected=false})')
+
+          replace('src/games/engines/ginRummy.js',
+              'function legalActions(state,actor=state.actor){',
+              '/** @returns {any[]} */\nfunction legalActions(state,actor=state.actor){')
+
+          replace('src/games/engines/blackjack.js',
+              'function legalActions(state) {',
+              '/** @returns {any[]} */\nfunction legalActions(state) {')
+
+          replace('src/games/engines/texasHoldem.js',
+              'function nextSeat(players, from, predicate = () => true) {',
+              'function nextSeat(players, from, predicate = (_player, _seat) => true) {')
+
+          replace('src/lib/appContext.jsx',
+              'return () => (active = false);',
+              'return () => { active = false; };')
+
+          replace('src/lib/coach.js',
+              'return { ok: true, text: typeof res === "string" ? res : res?.output || res?.text || JSON.stringify(res) };',
+              'const result = /** @type {any} */ (res);\n    return { ok: true, text: typeof res === "string" ? res : result?.output || result?.text || JSON.stringify(res) };')
+
+          replace('src/components/premium/GlassSurface.jsx',
+              'export default function GlassSurface({',
+              '/** @param {any} props */\nexport default function GlassSurface({')
+          replace('src/components/premium/GlassSurface.jsx',
+              '}) {\n  return (\n    <Component',
+              '}) {\n  const Surface = /** @type {React.ElementType} */ (Component);\n  return (\n    <Surface')
+          replace('src/components/premium/GlassSurface.jsx',
+              '</Component>',
+              '</Surface>')
+
+          replace('src/components/premium/TactilePressable.jsx',
+              'type={type}',
+              'type={/** @type {"button" | "submit" | "reset"} */ (type)}')
+
+          p=Path('jsconfig.json')
+          text=p.read_text()
+          old='"include": ["src/components/**/*.js", "src/pages/**/*.jsx", "src/Layout.jsx"]'
+          new='"include": ["src/components/**/*.js", "src/pages/**/*.jsx", "src/Layout.jsx", "src/types/**/*.d.ts"]'
+          if old not in text:
+              raise SystemExit('jsconfig include contract changed unexpectedly')
+          p.write_text(text.replace(old,new,1))
+
+          types=Path('src/types/holdwise-native-window.d.ts')
+          types.parent.mkdir(parents=True,exist_ok=True)
+          types.write_text('''export {};\n\ndeclare global {\n  interface Window {\n    __holdwiseStoreKitResolve?: (requestId: string, payload: any) => void;\n    webkit?: {\n      messageHandlers?: {\n        holdwiseStoreKit?: { postMessage: (message: any) => void };\n      };\n    };\n    HoldWiseStoreKit?: Record<string, (payload?: any) => any>;\n    HoldWisePlayBilling?: Record<string, (payload?: any) => any>;\n  }\n}\n''')
+          PY
+
+      - name: Rehydrate sealed course data
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -D -i .appetize/full-data/lessons.b64 | gunzip > src/lib/lessons.js
+          cat .appetize/full-data/academy.part.* | base64 -D | gunzip > src/lib/academy.js
+          test "$(shasum -a 256 src/lib/lessons.js | awk '{print $1}')" = "ada157e544ed0fa5c578367e21172cf1c925df1af048881a453c336739a5c532"
+          test "$(shasum -a 256 src/lib/academy.js | awk '{print $1}')" = "5dd515383d75bdd842a56f9cf2adfd8a6536a76ca3200b0b1fa560cfcddfd282"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run full release preflight
+        id: qa
+        shell: bash
+        run: |
+          set +e
+          LOG="$RUNNER_TEMP/type-contract-preflight.log"
+          : > "$LOG"
+          overall=0
+          run_gate() {
+            name="$1"; shift
+            echo "=== $name ===" | tee -a "$LOG"
+            "$@" 2>&1 | tee -a "$LOG"
+            status=${PIPESTATUS[0]}
+            echo "gate_${name// /_}=$status" >> "$GITHUB_OUTPUT"
+            if [[ $status -ne 0 ]]; then overall=$status; fi
+            return 0
+          }
+          run_gate test npm run test
+          run_gate lint npm run lint
+          run_gate typecheck npm run typecheck
+          run_gate build npm run build
+          run_gate gameplay_audit npm run audit:gameplay
+          echo "overall=$overall" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Commit fix and verification receipt
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          REPORT="$RUNNER_TEMP/type-contract-preflight.txt"
+          LOG="$RUNNER_TEMP/type-contract-preflight.log"
+          {
+            echo "HoldWise Type Contract Fix Preflight"
+            echo "source_sha=$GITHUB_SHA"
+            echo "node=$(node --version)"
+            echo "test=${{ steps.qa.outputs.gate_test }}"
+            echo "lint=${{ steps.qa.outputs.gate_lint }}"
+            echo "typecheck=${{ steps.qa.outputs.gate_typecheck }}"
+            echo "build=${{ steps.qa.outputs.gate_build }}"
+            echo "gameplay_audit=${{ steps.qa.outputs.gate_gameplay_audit }}"
+            echo "overall=${{ steps.qa.outputs.overall }}"
+            echo
+            echo "=== errors ==="
+            grep -n -E 'error TS|not ok|# fail |Error:|FAILED|failed' "$LOG" | tail -n 160 || true
+            echo
+            echo "=== tail ==="
+            tail -n 100 "$LOG" || true
+          } > "$REPORT"
+          cat "$REPORT"
+          mkdir -p .release
+          cp "$REPORT" .release/type-contract-preflight.txt
+
+          git config user.name 'HoldWise QA Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add src jsconfig.json .release/type-contract-preflight.txt
+          git commit -m "fix: repair HoldWise runtime-neutral type contracts [type-fix-result] [skip ci]"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Enforce green preflight
+        if: steps.qa.outputs.overall != '0'
+        run: exit 1
