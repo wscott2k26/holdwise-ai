@@ -18,9 +18,6 @@ workflows:
     environment:
       xcode: latest
       node: 22
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.willywill.holdwiseai
       vars:
         BUNDLE_ID: com.willywill.holdwiseai
         APP_NAME: HoldWise AI
