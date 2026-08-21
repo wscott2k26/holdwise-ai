@@ -15,6 +15,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -48,7 +50,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .release
-          OUT=".release/qa-node22-macos-${GITHUB_SHA}.txt"
+          OUT="$RUNNER_TEMP/qa-node22-macos-${GITHUB_SHA}.txt"
           LOG="$RUNNER_TEMP/holdwise-core-test.log"
           {
             echo "HoldWise Node 22 macOS QA Diagnostic"
@@ -74,9 +76,14 @@ jobs:
           PY
           } > "$OUT"
           cat "$OUT"
+
           git config user.name 'HoldWise QA Bot'
           git config user.email 'actions@users.noreply.github.com'
-          git add "$OUT"
+          git fetch origin "$GITHUB_REF_NAME"
+          git reset --hard "origin/$GITHUB_REF_NAME"
+          mkdir -p .release
+          cp "$OUT" ".release/qa-node22-macos-${GITHUB_SHA}.txt"
+          git add ".release/qa-node22-macos-${GITHUB_SHA}.txt"
           git commit -m "chore: record Node 22 QA diagnostic ${GITHUB_SHA::7} [skip ci]"
           git push origin "HEAD:${GITHUB_REF_NAME}"
 
