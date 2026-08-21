@@ -1,0 +1,138 @@
+HoldWise Codemagic-equivalent Preflight
+source_sha=32f409fef564d65074baab0f6d31ba5674c89985
+node=v22.23.1
+test=0
+lint=0
+typecheck=2
+build=0
+gameplay_audit=0
+overall=2
+
+=== failure summary ===
+245:# Subtest: Go Fish failed ask draws one, repeats on lucky draw, otherwise passes turn; books of four score automatically
+246:ok 40 - Go Fish failed ask draws one, repeats on lucky draw, otherwise passes turn; books of four score automatically
+875:# Subtest: native controller waits for web ready and surfaces startup failures
+876:ok 145 - native controller waits for web ready and surfaces startup failures
+1173:# fail 0
+
+=== tail ===
+# tests 193
+# suites 0
+# pass 193
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1977.656291
+
+> holdwise-ai@1.4.0 validate:content
+> node scripts/validate-content.mjs
+
+Validated 34 complete Academy games, 60 core lessons, StoreKit bridge, and App route imports.
+=== lint ===
+
+> holdwise-ai@1.4.0 lint
+> eslint . --quiet
+
+=== typecheck ===
+
+> holdwise-ai@1.4.0 typecheck
+> tsc -p ./jsconfig.json
+
+src/components/CoachAcePanel.jsx(82,16): error TS2741: Property 'onTap' is missing in type '{ mascotId: string; mood: string; talking: boolean; size: number; }' but required in type '{ mascotId?: string; mood?: string; size?: number; talking?: boolean; draggable?: boolean; onTap: any; className?: string; }'.
+src/components/games/FamilyTable.jsx(43,16): error TS2741: Property 'extra' is missing in type '{ players: any; actor: any; }' but required in type '{ players: any; actor: any; extra: any; }'.
+src/components/games/FamilyTable.jsx(62,16): error TS2741: Property 'extra' is missing in type '{ players: any; actor: any; }' but required in type '{ players: any; actor: any; extra: any; }'.
+src/components/games/FamilyTable.jsx(62,683): error TS2739: Type '{ card: any; }' is missing the following properties from type '{ card: any; selected: any; onClick: any; }': selected, onClick
+src/components/games/GinRummyTable.jsx(102,447): error TS2339: Property 'gin' does not exist on type '{ type: string; actor: any; cardId?: undefined; } | { type: string; actor: any; cardId: any; }'.
+  Property 'gin' does not exist on type '{ type: string; actor: any; cardId?: undefined; }'.
+src/components/games/GinRummyTable.jsx(102,475): error TS2339: Property 'deadwood' does not exist on type '{ type: string; actor: any; cardId?: undefined; } | { type: string; actor: any; cardId: any; }'.
+  Property 'deadwood' does not exist on type '{ type: string; actor: any; cardId?: undefined; }'.
+src/components/games/SolitaireTable.jsx(97,138): error TS2741: Property 'label' is missing in type '{ card: any; selected: any; onClick: any; }' but required in type '{ card: any; faceDown?: boolean; selected?: boolean; onClick: any; label: any; }'.
+src/components/games/SolitaireTable.jsx(114,535): error TS2739: Type '{ card: any; selected: boolean; }' is missing the following properties from type '{ card: any; faceDown?: boolean; selected?: boolean; onClick: any; label: any; }': onClick, label
+src/components/games/SolitaireTable.jsx(114,1261): error TS2741: Property 'label' is missing in type '{ card: any; faceDown: boolean; selected: boolean; onClick: (event: any) => void; }' but required in type '{ card: any; faceDown?: boolean; selected?: boolean; onClick: any; label: any; }'.
+src/components/games/SolitaireTable.jsx(124,910): error TS2741: Property 'label' is missing in type '{ card: any; faceDown: boolean; selected: boolean; onClick: (event: any) => void; }' but required in type '{ card: any; faceDown?: boolean; selected?: boolean; onClick: any; label: any; }'.
+src/components/games/SolitaireTable.jsx(139,323): error TS2741: Property 'label' is missing in type '{ card: any; onClick: () => void; }' but required in type '{ card: any; faceDown?: boolean; selected?: boolean; onClick: any; label: any; }'.
+src/components/games/SolitaireTable.jsx(139,661): error TS2741: Property 'selected' is missing in type '{ key: string; suit: string; card: any; onClick: () => void; }' but required in type '{ card: any; suit: any; onClick: any; selected: any; }'.
+src/components/games/SolitaireTable.jsx(139,1091): error TS2741: Property 'label' is missing in type '{ card: any; selected: boolean; onClick: (event: any) => void; }' but required in type '{ card: any; faceDown?: boolean; selected?: boolean; onClick: any; label: any; }'.
+src/components/games/SolitaireTable.jsx(143,883): error TS2741: Property 'label' is missing in type '{ card: any; faceDown: boolean; onClick: () => void; }' but required in type '{ card: any; faceDown?: boolean; selected?: boolean; onClick: any; label: any; }'.
+src/components/games/SolitaireTable.jsx(146,1146): error TS2739: Type '{ card: any; selected: boolean; }' is missing the following properties from type '{ card: any; faceDown?: boolean; selected?: boolean; onClick: any; label: any; }': onClick, label
+src/components/games/SolitaireTable.jsx(146,1510): error TS2741: Property 'label' is missing in type '{ card: any; faceDown: boolean; selected: boolean; onClick: () => void; }' but required in type '{ card: any; faceDown?: boolean; selected?: boolean; onClick: any; label: any; }'.
+src/components/premium/GlassSurface.jsx(29,6): error TS2322: Type '{ children: any; className: string; }' is not assignable to type 'IntrinsicAttributes'.
+  Property 'children' does not exist on type 'IntrinsicAttributes'.
+src/components/premium/TactilePressable.jsx(30,7): error TS2322: Type 'string' is not assignable to type '"reset" | "submit" | "button"'.
+src/games/engines/blackjack.js(174,68): error TS2345: Argument of type '{ type: string; }' is not assignable to parameter of type '{ type: string; min: number; max: number; }'.
+  Type '{ type: string; }' is missing the following properties from type '{ type: string; min: number; max: number; }': min, max
+src/games/engines/ginRummy.js(135,82): error TS2339: Property 'deadwood' does not exist on type '{ type: string; actor: any; cardId?: undefined; } | { type: string; actor: any; cardId: any; }'.
+  Property 'deadwood' does not exist on type '{ type: string; actor: any; cardId?: undefined; }'.
+src/games/engines/ginRummy.js(135,93): error TS2339: Property 'deadwood' does not exist on type '{ type: string; actor: any; cardId?: undefined; } | { type: string; actor: any; cardId: any; }'.
+  Property 'deadwood' does not exist on type '{ type: string; actor: any; cardId?: undefined; }'.
+src/games/engines/ginRummy.js(136,70): error TS2339: Property 'deadwood' does not exist on type '{ type: string; actor: any; cardId?: undefined; } | { type: string; actor: any; cardId: any; }'.
+  Property 'deadwood' does not exist on type '{ type: string; actor: any; cardId?: undefined; }'.
+src/games/engines/ginRummy.js(136,81): error TS2339: Property 'deadwood' does not exist on type '{ type: string; actor: any; cardId?: undefined; } | { type: string; actor: any; cardId: any; }'.
+  Property 'deadwood' does not exist on type '{ type: string; actor: any; cardId?: undefined; }'.
+src/games/engines/texasHoldem.js(22,19): error TS2554: Expected 0 arguments, but got 2.
+src/lib/appContext.jsx(122,13): error TS2345: Argument of type '() => () => boolean' is not assignable to parameter of type 'EffectCallback'.
+  Type '() => boolean' is not assignable to type 'void | Destructor'.
+    Type '() => boolean' is not assignable to type 'Destructor'.
+      Type 'boolean' is not assignable to type 'void | { [UNDEFINED_VOID_ONLY]: never; }'.
+src/lib/coach.js(101,67): error TS2339: Property 'output' does not exist on type 'object'.
+src/lib/coach.js(101,82): error TS2339: Property 'text' does not exist on type 'object'.
+src/lib/nativeBillingBridge.js(10,30): error TS2339: Property '__holdwiseStoreKitResolve' does not exist on type 'Window & typeof globalThis'.
+src/lib/nativeBillingBridge.js(11,10): error TS2339: Property '__holdwiseStoreKitResolve' does not exist on type 'Window & typeof globalThis'.
+src/lib/nativeBillingBridge.js(34,26): error TS2339: Property 'webkit' does not exist on type 'Window & typeof globalThis'.
+src/lib/nativeBillingBridge.js(50,14): error TS2339: Property 'HoldWiseStoreKit' does not exist on type 'Window & typeof globalThis'.
+src/lib/nativeBillingBridge.js(50,41): error TS2339: Property 'webkit' does not exist on type 'Window & typeof globalThis'.
+src/lib/nativeBillingBridge.js(51,14): error TS2339: Property 'HoldWisePlayBilling' does not exist on type 'Window & typeof globalThis'.
+src/lib/nativeBillingBridge.js(62,49): error TS2339: Property 'HoldWiseStoreKit' does not exist on type 'Window & typeof globalThis'.
+src/lib/nativeBillingBridge.js(68,44): error TS2339: Property 'HoldWisePlayBilling' does not exist on type 'Window & typeof globalThis'.
+src/pages/GamePractice.jsx(31,10): error TS2741: Property 'onTap' is missing in type '{ mascotId: any; mood: string; size: number; className: string; }' but required in type '{ mascotId?: string; mood?: string; size?: number; talking?: boolean; draggable?: boolean; onTap: any; className?: string; }'.
+src/pages/GamePractice.jsx(92,10): error TS2741: Property 'onTap' is missing in type '{ mascotId: any; mood: string; talking: boolean; size: number; }' but required in type '{ mascotId?: string; mood?: string; size?: number; talking?: boolean; draggable?: boolean; onTap: any; className?: string; }'.
+src/pages/Onboarding.jsx(75,16): error TS2741: Property 'onTap' is missing in type '{ mascotId: string; mood: string; size: number; }' but required in type '{ mascotId?: string; mood?: string; size?: number; talking?: boolean; draggable?: boolean; onTap: any; className?: string; }'.
+=== build ===
+
+> holdwise-ai@1.4.0 build
+> vite build
+
+[base44] Proxy not enabled (VITE_BASE44_APP_BASE_URL not set)
+[36mvite v6.4.3 [32mbuilding for production...[36m[39m
+transforming...
+[32m✓[39m 2198 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                         [39m[1m[2m  1.51 kB[22m[1m[22m[2m │ gzip:   0.72 kB[22m
+[2mdist/[22m[2massets/[22m[32mstrategyWorker-BfrYie99.js  [39m[1m[2m  8.90 kB[22m[1m[22m
+[2mdist/[22m[2massets/[22m[35mindex-x2WgEpb5.css          [39m[1m[2m 61.34 kB[22m[1m[22m[2m │ gzip:  13.21 kB[22m
+[2mdist/[22m[2massets/[22m[36mCoachAcePanel-DkKbp_-q.js   [39m[1m[2m 26.08 kB[22m[1m[22m[2m │ gzip:   9.87 kB[22m[2m │ map:    56.75 kB[22m
+[2mdist/[22m[2massets/[22m[36mindex-DQ_kjtNA.js           [39m[1m[33m697.78 kB[39m[22m[2m │ gzip: 216.16 kB[22m[2m │ map: 2,785.09 kB[22m
+[33m
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[32m✓ built in 6.11s[39m
+=== gameplay_audit ===
+
+> holdwise-ai@1.4.0 audit:gameplay
+> node scripts/audit-gameplay.mjs
+
+{
+  "status": "PASS",
+  "deckSeeds": 200,
+  "dailyChallengeDays": 365,
+  "fiveCardHands": 2598960,
+  "categoryCounts": {
+    "ROYAL_FLUSH": 4,
+    "STRAIGHT_FLUSH": 36,
+    "FOUR_OF_A_KIND": 624,
+    "FULL_HOUSE": 3744,
+    "FLUSH": 5108,
+    "STRAIGHT": 10200,
+    "THREE_OF_A_KIND": 54912,
+    "TWO_PAIR": 123552,
+    "HIGH_PAIR": 337920,
+    "LOW_PAIR": 760320,
+    "HIGH_CARD": 1302540
+  },
+  "exactStrategyChecks": 9,
+  "elapsedMs": 6441
+}
