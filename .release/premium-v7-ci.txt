@@ -1,212 +1,212 @@
 HoldWise Premium V7 Established CI
-source_sha=4750fc45440fb338d7c5c593f036539bbe101e13
+source_sha=e3df2bf4735f72eed9fbf360d4eaf22238b65259
 node=v22.23.2
 contract=0
-tests=1
+tests=0
 lint=0
 typecheck=0
 build=0
 gameplay_audit=0
-overall=1
+overall=0
 
-  type: 'test'
-  ...
-# Subtest: Spades round scoring handles contracts, bags, nil and ten-bag penalty
-ok 168 - Spades round scoring handles contracts, bags, nil and ten-bag penalty
-  ---
-  duration_ms: 0.375541
+  duration_ms: 0.355519
   type: 'test'
   ...
 # Subtest: Spades bot bidding/play always produce legal choices
 ok 169 - Spades bot bidding/play always produce legal choices
   ---
-  duration_ms: 2.293415
+  duration_ms: 2.506422
   type: 'test'
   ...
 # Subtest: Spades complete round can start a new round with rotated dealer and persistent scores
 ok 170 - Spades complete round can start a new round with rotated dealer and persistent scores
   ---
-  duration_ms: 5.433101
+  duration_ms: 7.078627
   type: 'test'
   ...
 # Subtest: Hearts deals 13 cards and cycles passing left, right, across, hold
 ok 171 - Hearts deals 13 cards and cycles passing left, right, across, hold
   ---
-  duration_ms: 1.228255
+  duration_ms: 1.902504
   type: 'test'
   ...
 # Subtest: Hearts passing requires exactly three cards and transfers simultaneously
 ok 172 - Hearts passing requires exactly three cards and transfers simultaneously
   ---
-  duration_ms: 1.655252
+  duration_ms: 1.922205
   type: 'test'
   ...
 # Subtest: Hearts first lead is 2 clubs, players must follow suit, and point cards are blocked on first trick when alternatives exist
 ok 173 - Hearts first lead is 2 clubs, players must follow suit, and point cards are blocked on first trick when alternatives exist
   ---
-  duration_ms: 0.655004
+  duration_ms: 0.790783
   type: 'test'
   ...
 # Subtest: Hearts cannot be led before broken unless only hearts, and trick winner follows lead suit
 ok 174 - Hearts cannot be led before broken unless only hearts, and trick winner follows lead suit
   ---
-  duration_ms: 0.35368
+  duration_ms: 0.445815
   type: 'test'
   ...
 # Subtest: Hearts scoring counts hearts and queen of spades and applies Shoot the Moon
 ok 175 - Hearts scoring counts hearts and queen of spades and applies Shoot the Moon
   ---
-  duration_ms: 0.246371
+  duration_ms: 0.26473
   type: 'test'
   ...
 # Subtest: Hearts bots choose legal passes/cards and a full round reaches score settlement
 ok 176 - Hearts bots choose legal passes/cards and a full round reaches score settlement
   ---
-  duration_ms: 6.583329
+  duration_ms: 6.76705
   type: 'test'
   ...
 # Subtest: TrickTable renders full Spades and Hearts match phases using real engines
 ok 177 - TrickTable renders full Spades and Hearts match phases using real engines
   ---
-  duration_ms: 1.829999
+  duration_ms: 1.261094
   type: 'test'
   ...
 # Subtest: Trick-table skin follows dark midnight teal, glass, gold and ruby category language
 ok 178 - Trick-table skin follows dark midnight teal, glass, gold and ruby category language
   ---
-  duration_ms: 0.407161
+  duration_ms: 0.282477
   type: 'test'
   ...
 # Subtest: GameRoom routes Spades and Hearts to TrickTable
 ok 179 - GameRoom routes Spades and Hearts to TrickTable
   ---
-  duration_ms: 0.273942
+  duration_ms: 0.197842
   type: 'test'
   ...
 # Subtest: every game has the complete ten-stage tutorial contract
 ok 180 - every game has the complete ten-stage tutorial contract
   ---
-  duration_ms: 4.139013
+  duration_ms: 3.47699
   type: 'test'
   ...
 # Subtest: tutorial interactive stages are backed by each game real engine, not text-only cards
 ok 181 - tutorial interactive stages are backed by each game real engine, not text-only cards
   ---
-  duration_ms: 1.285131
+  duration_ms: 0.846436
   type: 'test'
   ...
 # Subtest: tutorial completes mastery through the canonical progress API after the ten-stage path
 ok 182 - tutorial completes mastery through the canonical progress API after the ten-stage path
   ---
-  duration_ms: 0.536673
+  duration_ms: 0.376985
   type: 'test'
   ...
 # Subtest: video poker hold phase has no no-op Hold selected button
 ok 183 - video poker hold phase has no no-op Hold selected button
   ---
-  duration_ms: 0.796929
+  duration_ms: 0.813279
   type: 'test'
   ...
 # Subtest: video poker result is rendered through a React component, not an unknown lowercase HTML element
 ok 184 - video poker result is rendered through a React component, not an unknown lowercase HTML element
   ---
-  duration_ms: 0.925817
+  duration_ms: 0.897797
   type: 'test'
   ...
 # Subtest: VideoPokerTable exposes six catalog-driven full modes with premium machine controls
 ok 185 - VideoPokerTable exposes six catalog-driven full modes with premium machine controls
   ---
-  duration_ms: 1.749839
+  duration_ms: 1.231205
   type: 'test'
   ...
 # Subtest: GameRoom routes all six video poker games to VideoPokerTable
 ok 186 - GameRoom routes all six video poker games to VideoPokerTable
   ---
-  duration_ms: 0.297045
+  duration_ms: 0.219387
   type: 'test'
   ...
 # Subtest: video poker skin has dark casino chrome, gold, emerald and ruby accents
 ok 187 - video poker skin has dark casino chrome, gold, emerald and ruby accents
   ---
-  duration_ms: 0.388686
+  duration_ms: 0.26059
   type: 'test'
   ...
 # Subtest: six approved video poker variants have named authentic reference paytables
 ok 188 - six approved video poker variants have named authentic reference paytables
   ---
-  duration_ms: 1.646727
+  duration_ms: 1.868485
   type: 'test'
   ...
 # Subtest: Bonus Poker differentiates aces, low quads and 5-K quads
 ok 189 - Bonus Poker differentiates aces, low quads and 5-K quads
   ---
-  duration_ms: 0.78126
+  duration_ms: 0.931882
   type: 'test'
   ...
 # Subtest: Double Double Bonus recognizes premium kicker quads
 ok 190 - Double Double Bonus recognizes premium kicker quads
   ---
-  duration_ms: 0.328664
+  duration_ms: 0.355559
   type: 'test'
   ...
 # Subtest: Full Pay Deuces Wild recognizes natural royal, four deuces and five of a kind
 ok 191 - Full Pay Deuces Wild recognizes natural royal, four deuces and five of a kind
   ---
-  duration_ms: 0.648261
+  duration_ms: 0.569217
   type: 'test'
   ...
 # Subtest: Joker Poker uses a 53-card deck and recognizes natural/wild hands and Kings-or-better threshold
 ok 192 - Joker Poker uses a 53-card deck and recognizes natural/wild hands and Kings-or-better threshold
   ---
-  duration_ms: 1.299608
+  duration_ms: 0.944691
   type: 'test'
   ...
 # Subtest: selected paytables pay reference-category amounts at five credits
 ok 193 - selected paytables pay reference-category amounts at five credits
   ---
-  duration_ms: 0.279973
+  duration_ms: 0.211339
   type: 'test'
   ...
 # Subtest: videoPokerEngine plays a complete bet-deal-hold-draw-payout-new-hand loop for every variant
 ok 194 - videoPokerEngine plays a complete bet-deal-hold-draw-payout-new-hand loop for every variant
   ---
-  duration_ms: 8.389093
+  duration_ms: 5.592443
   type: 'test'
   ...
 # Subtest: wild variants explicitly refuse to label standard Jacks strategy as exact
 ok 195 - wild variants explicitly refuse to label standard Jacks strategy as exact
   ---
-  duration_ms: 0.615259
+  duration_ms: 0.461298
   type: 'test'
   ...
 # Subtest: War keeps the just-played face-up battle cards for the premium table reveal
 ok 196 - War keeps the just-played face-up battle cards for the premium table reveal
   ---
-  duration_ms: 2.591531
+  duration_ms: 2.830056
   type: 'test'
   ...
 # Subtest: War reveal history records the final face-up comparison after a tie war
 ok 197 - War reveal history records the final face-up comparison after a tie war
   ---
-  duration_ms: 1.464243
+  duration_ms: 0.537026
   type: 'test'
   ...
 # Subtest: War premium table renders the latest face-up comparison instead of only two card backs
 ok 198 - War premium table renders the latest face-up comparison instead of only two card backs
   ---
-  duration_ms: 0.843055
+  duration_ms: 0.658693
   type: 'test'
   ...
 1..198
 # tests 198
 # suites 0
-# pass 196
-# fail 2
+# pass 198
+# fail 0
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 1299.285312
-tests=1
+# duration_ms 1204.549506
+
+> holdwise-ai@1.4.0 validate:content
+> node scripts/validate-content.mjs
+
+Validated 34 complete Academy games, 60 core lessons, StoreKit bridge, and App route imports.
+tests=0
 === lint ===
 
 > holdwise-ai@1.4.0 lint
@@ -240,7 +240,7 @@ computing gzip size...
 - Using dynamic import() to code-split the application
 - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
-[32m✓ built in 5.88s[39m
+[32m✓ built in 3.97s[39m
 build=0
 === gameplay_audit ===
 
@@ -266,6 +266,6 @@ build=0
     "HIGH_CARD": 1302540
   },
   "exactStrategyChecks": 9,
-  "elapsedMs": 6504
+  "elapsedMs": 5090
 }
 gameplay_audit=0
