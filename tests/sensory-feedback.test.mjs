@@ -46,7 +46,6 @@ function makeAudioScope({ state = "running" } = {}) {
 
 test("selection sound schedules a short low-volume Web Audio tone", () => {
   const { scope, events } = makeAudioScope();
-
   assert.equal(sensory.playSoundEffect(true, "selection", scope), true);
   assert.equal(events.contexts, 1);
   assert.deepEqual(events.frequencies, [460]);
@@ -56,17 +55,14 @@ test("selection sound schedules a short low-volume Web Audio tone", () => {
 
 test("sound effects reuse one audio context across repeated controls", () => {
   const { scope, events } = makeAudioScope();
-
   sensory.playSoundEffect(true, "selection", scope);
   sensory.playSoundEffect(true, "selection", scope);
-
   assert.equal(events.contexts, 1);
   assert.equal(events.starts.length, 2);
 });
 
 test("sound effects resume a suspended iPhone audio context", () => {
   const { scope, events } = makeAudioScope({ state: "suspended" });
-
   assert.equal(sensory.playSoundEffect(true, "selection", scope), true);
   assert.equal(events.resumes, 1);
   assert.equal(events.starts.length, 1);
@@ -74,7 +70,6 @@ test("sound effects resume a suspended iPhone audio context", () => {
 
 test("deal sound uses a soft two-note card flick", () => {
   const { scope, events } = makeAudioScope();
-
   assert.equal(sensory.playSoundEffect(true, "deal", scope), true);
   assert.deepEqual(events.frequencies, [330, 410]);
   assert.deepEqual(events.starts, [10, 10.04]);
@@ -83,7 +78,6 @@ test("deal sound uses a soft two-note card flick", () => {
 
 test("success sound rises through a restrained two-note chime", () => {
   const { scope, events } = makeAudioScope();
-
   assert.equal(sensory.playSoundEffect(true, "success", scope), true);
   assert.deepEqual(events.frequencies, [620, 820]);
   assert.deepEqual(events.starts, [10, 10.07]);
@@ -92,7 +86,6 @@ test("success sound rises through a restrained two-note chime", () => {
 
 test("warning sound falls without becoming a harsh alarm", () => {
   const { scope, events } = makeAudioScope();
-
   assert.equal(sensory.playSoundEffect(true, "warning", scope), true);
   assert.deepEqual(events.frequencies, [260, 190]);
   assert.deepEqual(events.starts, [10, 10.09]);
@@ -101,7 +94,6 @@ test("warning sound falls without becoming a harsh alarm", () => {
 
 test("muted sound creates no audio context", () => {
   const { scope, events } = makeAudioScope();
-
   assert.equal(sensory.playSoundEffect(false, "success", scope), false);
   assert.equal(events.contexts, 0);
   assert.equal(events.starts.length, 0);
@@ -110,7 +102,6 @@ test("muted sound creates no audio context", () => {
 test("shared tactile controls honor the persisted sound setting", () => {
   const tactile = read("src/components/premium/TactilePressable.jsx");
   const context = read("src/lib/appContext.jsx");
-
   assert.match(context, /soundEffects:\s*true/);
   assert.match(tactile, /playSoundEffect/);
   assert.match(tactile, /soundType\s*\|\|\s*hapticType/);
@@ -123,7 +114,6 @@ test("visible sensory controls can mute sound and haptics", () => {
   const shell = read("src/components/games/GameShell.jsx");
   const tutorial = read("src/pages/GameTutorial.jsx");
   const challenge = read("src/pages/DailyChallengeHub.jsx");
-
   assert.match(controls, /Turn sound effects (?:on|off)/);
   assert.match(controls, /Turn haptics (?:on|off)/);
   assert.match(controls, /setSettings/);
@@ -134,17 +124,16 @@ test("visible sensory controls can mute sound and haptics", () => {
   assert.match(challenge, /SensoryControls/);
 });
 
-test("cinematic backdrop presents six animated glass playing cards", () => {
+test("cinematic backdrop rotates real casino card photography and honors motion controls", () => {
   const backdrop = read("src/components/premium/CinematicBackdrop.jsx");
-  const css = read("src/index.css");
-
-  for (const id of ["ace-spades", "queen-hearts", "king-clubs", "ten-diamonds", "seven-spades", "joker-star"]) {
-    assert.match(backdrop, new RegExp(id));
-  }
-  assert.match(backdrop, /hw-floating-card/);
-  assert.match(css, /@keyframes hw-floating-card/);
-  assert.match(css, /\.reduce-motion \.hw-floating-card/);
-  assert.match(css, /prefers-reduced-motion:[\s\S]*\.hw-floating-card/);
+  const css = read("src/styles/casinoPremiumV7.css");
+  assert.ok((backdrop.match(/images\.unsplash\.com\/photo-/g) || []).length >= 5);
+  assert.match(backdrop, /12000/);
+  assert.match(backdrop, /rotatingBackgrounds/);
+  assert.match(backdrop, /backgroundMotion/);
+  assert.match(backdrop, /hw-photo-scene/);
+  assert.match(css, /@keyframes hw-v7-kenburns/);
+  assert.match(css, /\.reduce-motion \.hw-photo-scene-motion/);
 });
 
 test("direct card and navigation controls also produce sensory feedback", () => {
@@ -157,7 +146,6 @@ test("direct card and navigation controls also produce sensory feedback", () => 
 
 test("daily challenge answers map wins and misses to semantic feedback", () => {
   const source = read("src/pages/DailyChallengeHub.jsx");
-
   assert.match(source, /hapticType=\{correct\s*\?\s*'success'\s*:\s*'warning'\}/);
   assert.match(source, /soundType=\{correct\s*\?\s*'success'\s*:\s*'warning'\}/);
 });
