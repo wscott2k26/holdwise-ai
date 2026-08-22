@@ -11,7 +11,7 @@ workflows:
       events:
         - push
       branch_patterns:
-        - pattern: feature/holdwise-light-premium-v6
+        - pattern: feature/holdwise-casino-premium-v7
           include: true
           source: true
 
