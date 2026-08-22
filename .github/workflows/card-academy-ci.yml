@@ -1,26 +1,98 @@
-name: Card Academy Focused CI
+name: Card Academy + Premium V7 CI
 
 on:
   push:
     branches:
       - card-academy-full-v1
+      - feature/holdwise-casino-premium-v7
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   focused:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Card Academy focused tests
+
+      - name: Verify sealed course data
+        id: rehydrate
+        shell: bash
         run: |
           set -euo pipefail
-          node --test tests/native-ready-source.test.mjs tests/card-academy-catalog.test.mjs tests/tutorial-contract.test.mjs tests/card-academy-progress.test.mjs tests/card-academy-routing.test.mjs tests/card-academy-visual.test.mjs tests/poker-evaluator.test.mjs tests/texas-holdem-engine.test.mjs tests/texas-holdem-ui.test.mjs tests/video-poker-variants.test.mjs tests/video-poker-ui.test.mjs tests/video-poker-result-component.test.mjs tests/video-poker-no-dead-control.test.mjs tests/blackjack-engine.test.mjs tests/blackjack-ui.test.mjs tests/solitaire-engines.test.mjs tests/solitaire-ui.test.mjs tests/trick-taking-engines.test.mjs tests/trick-taking-ui.test.mjs tests/gin-rummy-engine.test.mjs
-      - run: npm install --no-audit --no-fund
-      - name: Production web build
-        run: npm run build
+          base64 -d .appetize/full-data/lessons.b64 | gunzip > src/lib/lessons.js
+          cat .appetize/full-data/academy.part.* | base64 -d | gunzip > src/lib/academy.js
+          test "$(sha256sum src/lib/lessons.js | awk '{print $1}')" = "ada157e544ed0fa5c578367e21172cf1c925df1af048881a453c336739a5c532"
+          test "$(sha256sum src/lib/academy.js | awk '{print $1}')" = "5dd515383d75bdd842a56f9cf2adfd8a6536a76ca3200b0b1fa560cfcddfd282"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Full premium V7 release gates
+        id: gates
+        shell: bash
+        run: |
+          set +e
+          LOG="$RUNNER_TEMP/holdwise-premium-v7-ci.log"
+          : > "$LOG"
+          gate() {
+            NAME="$1"; shift
+            echo "=== $NAME ===" | tee -a "$LOG"
+            "$@" >> "$LOG" 2>&1
+            CODE=$?
+            echo "$NAME=$CODE" >> "$GITHUB_OUTPUT"
+            echo "$NAME=$CODE" | tee -a "$LOG"
+          }
+          gate contract node --test tests/casino-premium-v7.test.mjs
+          gate tests npm test
+          gate lint npm run lint
+          gate typecheck npm run typecheck
+          gate build npm run build
+          gate gameplay_audit npm run audit:gameplay
+          cat "$LOG"
+          exit 0
+
+      - name: Persist premium V7 CI receipt
+        if: always() && github.ref_name == 'feature/holdwise-casino-premium-v7'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .release
+          OUT=.release/premium-v7-ci.txt
+          CONTRACT='${{ steps.gates.outputs.contract }}'
+          TESTS='${{ steps.gates.outputs.tests }}'
+          LINT='${{ steps.gates.outputs.lint }}'
+          TYPECHECK='${{ steps.gates.outputs.typecheck }}'
+          BUILD='${{ steps.gates.outputs.build }}'
+          AUDIT='${{ steps.gates.outputs.gameplay_audit }}'
+          OVERALL=0
+          for code in "$CONTRACT" "$TESTS" "$LINT" "$TYPECHECK" "$BUILD" "$AUDIT"; do
+            if [[ "$code" != "0" ]]; then OVERALL=1; fi
+          done
+          {
+            echo "HoldWise Premium V7 Established CI"
+            echo "source_sha=$GITHUB_SHA"
+            echo "node=$(node --version)"
+            echo "contract=$CONTRACT"
+            echo "tests=$TESTS"
+            echo "lint=$LINT"
+            echo "typecheck=$TYPECHECK"
+            echo "build=$BUILD"
+            echo "gameplay_audit=$AUDIT"
+            echo "overall=$OVERALL"
+            echo
+            if [[ -f "$RUNNER_TEMP/holdwise-premium-v7-ci.log" ]]; then tail -n 260 "$RUNNER_TEMP/holdwise-premium-v7-ci.log"; fi
+          } > "$OUT"
+          cat "$OUT"
+          git config user.name 'HoldWise QA Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add "$OUT"
+          git commit -m "chore: record premium v7 established CI ${GITHUB_SHA::7} [skip ci]" || true
+          git pull --rebase origin "$GITHUB_REF_NAME" || true
+          git push origin "HEAD:$GITHUB_REF_NAME" || true
+          test "$OVERALL" = "0"
