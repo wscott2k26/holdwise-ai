@@ -1,0 +1,87 @@
+name: HoldWise Premium V7 Full QA
+
+on:
+  push:
+    branches:
+      - feature/holdwise-casino-premium-v7
+    paths:
+      - .release/premium-v7-full-qa-trigger.txt
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Rehydrate sealed course data
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d -i .appetize/full-data/lessons.b64 | gunzip > src/lib/lessons.js
+          cat .appetize/full-data/academy.part.* | base64 -d | gunzip > src/lib/academy.js
+          test "$(sha256sum src/lib/lessons.js | awk '{print $1}')" = "ada157e544ed0fa5c578367e21172cf1c925df1af048881a453c336739a5c532"
+          test "$(sha256sum src/lib/academy.js | awk '{print $1}')" = "5dd515383d75bdd842a56f9cf2adfd8a6536a76ca3200b0b1fa560cfcddfd282"
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Run all verification gates
+        id: gates
+        shell: bash
+        run: |
+          set +e
+          : > "$RUNNER_TEMP/v7-qa.log"
+          run_gate() {
+            NAME="$1"; shift
+            echo "=== $NAME ===" | tee -a "$RUNNER_TEMP/v7-qa.log"
+            "$@" >> "$RUNNER_TEMP/v7-qa.log" 2>&1
+            CODE=$?
+            echo "$NAME=$CODE" >> "$GITHUB_OUTPUT"
+            echo "$NAME=$CODE" | tee -a "$RUNNER_TEMP/v7-qa.log"
+          }
+          run_gate tests npm test
+          run_gate lint npm run lint
+          run_gate typecheck npm run typecheck
+          run_gate build npm run build
+          run_gate gameplay_audit npm run audit:gameplay
+          cat "$RUNNER_TEMP/v7-qa.log"
+          exit 0
+      - name: Persist QA receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .release
+          OUT=.release/premium-v7-full-qa.txt
+          TESTS='${{ steps.gates.outputs.tests }}'
+          LINT='${{ steps.gates.outputs.lint }}'
+          TYPECHECK='${{ steps.gates.outputs.typecheck }}'
+          BUILD='${{ steps.gates.outputs.build }}'
+          AUDIT='${{ steps.gates.outputs.gameplay_audit }}'
+          OVERALL=0
+          for code in "$TESTS" "$LINT" "$TYPECHECK" "$BUILD" "$AUDIT"; do if [[ "$code" != "0" ]]; then OVERALL=1; fi; done
+          {
+            echo "HoldWise Premium V7 Full QA"
+            echo "source_sha=$GITHUB_SHA"
+            echo "node=$(node --version)"
+            echo "tests=$TESTS"
+            echo "lint=$LINT"
+            echo "typecheck=$TYPECHECK"
+            echo "build=$BUILD"
+            echo "gameplay_audit=$AUDIT"
+            echo "overall=$OVERALL"
+            echo
+            tail -n 220 "$RUNNER_TEMP/v7-qa.log"
+          } > "$OUT"
+          git config user.name 'HoldWise Premium Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add "$OUT"
+          git commit -m "chore: record premium v7 full QA ${GITHUB_SHA::7} [skip ci]" || true
+          git pull --rebase origin "$GITHUB_REF_NAME" || true
+          git push origin "HEAD:$GITHUB_REF_NAME" || true
+          test "$OVERALL" = "0"
