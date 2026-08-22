@@ -23,24 +23,21 @@ test('HoldWise defaults to the complete Gemini-inspired light premium palette', 
   assert.doesNotMatch(context, /theme:\s*["']dark["']/);
 });
 
-test('lobby and shared game shell use light surfaces with ink text', () => {
-  const lobby = read('src/pages/CardAcademyLobby.jsx');
-  const familyTile = read('src/components/games/GameFamilyTile.jsx');
+test('premium V7 keeps browsing bright while game tables use focused casino felt', () => {
+  const home = read('src/pages/PremiumHome.jsx');
+  const library = read('src/pages/GameLibrary.jsx');
   const gameShell = read('src/components/games/GameShell.jsx');
+  const premiumCss = read('src/styles/casinoPremiumV7.css');
 
-  assert.match(lobby, /hw-academy-hero/);
-  assert.match(lobby, /hw-progress-card/);
-  assert.match(lobby, /hw-mini-card/);
-  assert.match(lobby, /text-\[hsl\(var\(--hw-ink\)\)\]/);
-  assert.doesNotMatch(lobby, /text-white(?:\/\d+)?\b/);
-
-  assert.match(familyTile, /hw-family-tile/);
-  assert.match(familyTile, /text-\[hsl\(var\(--hw-ink\)\)\]/);
-  assert.doesNotMatch(familyTile, /bg-black|text-white/);
-
-  assert.match(gameShell, /hw-game-shell/);
-  assert.match(gameShell, /text-\[hsl\(var\(--hw-ink\)\)\]/);
-  assert.doesNotMatch(gameShell, /text-white(?:\/\d+)?\b/);
+  assert.match(home, /hw-photo-glass-panel/);
+  assert.match(home, /hw-home-hero/);
+  assert.match(library, /hw-library-game-card/);
+  assert.match(premiumCss, /--hw-v7-ivory/);
+  assert.match(premiumCss, /--hw-v7-mint/);
+  assert.match(gameShell, /hw-game-topbar/);
+  assert.match(gameShell, /hw-premium-game-stage/);
+  assert.match(premiumCss, /\.hw-game-topbar[\s\S]*rgba\(250,255,252/);
+  assert.match(premiumCss, /\.hw-premium-game-stage[\s\S]*hsl\(157 63% 15%\)/);
 });
 
 test('native boot and web shell start on visibly light pearl surfaces', () => {
