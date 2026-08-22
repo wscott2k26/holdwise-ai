@@ -9,7 +9,8 @@ const atmosphere = read('src/components/premium/CinematicBackdrop.jsx');
 const sensory = read('src/components/premium/SensoryControls.jsx');
 const shell = read('src/components/games/GameShell.jsx');
 const context = read('src/lib/appContext.jsx');
-const css = read('src/index.css');
+const css = read('src/styles/casinoPremiumV7.css');
+const ambience = read('src/lib/casinoAmbience.js');
 
 test('premium v7 exposes the five-part mobile navigation', () => {
   for (const route of ['/home', '/games', '/practice', '/learn', '/progress']) {
@@ -36,6 +37,8 @@ test('casino ambience is opt-in and persisted with off low high levels', () => {
   assert.match(sensory, /low/);
   assert.match(sensory, /high/);
   assert.match(atmosphere, /setCasinoAmbience/);
+  assert.match(ambience, /LEVEL_GAIN/);
+  assert.match(ambience, /createBiquadFilter/);
 });
 
 test('the rebuild adds functional home games practice learn and progress hubs', () => {
