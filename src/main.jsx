@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
 import { installNativeBootErrorForwarding, reportNativeBootReady } from '@/lib/nativeBoot'
 import '@/index.css'
+import '@/styles/casinoPremiumV7.css'
 
 installNativeBootErrorForwarding()
 
