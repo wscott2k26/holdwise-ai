@@ -18,12 +18,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
+        continue-on-error: true
         with:
           node-version: 22
-          cache: npm
 
       - name: Run all V7 verification gates
         id: gates
+        if: always()
         shell: bash
         run: |
           set +e
@@ -39,6 +40,8 @@ jobs:
             return 0
           }
 
+          echo "node=$(node --version 2>/dev/null || echo unavailable)" | tee -a "$LOG"
+          echo "npm=$(npm --version 2>/dev/null || echo unavailable)" | tee -a "$LOG"
           run_gate contract node --test tests/casino-premium-v7.test.mjs
 
           echo "=== rehydrate ===" | tee -a "$LOG"
@@ -63,6 +66,7 @@ jobs:
           exit 0
 
       - name: Persist verification receipt
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
@@ -83,7 +87,7 @@ jobs:
           {
             echo "HoldWise Premium V7 Verification"
             echo "source_sha=$GITHUB_SHA"
-            echo "node=$(node --version)"
+            echo "node=$(node --version 2>/dev/null || echo unavailable)"
             echo "contract=$CONTRACT"
             echo "rehydrate=$REHYDRATE"
             echo "install=$INSTALL"
@@ -94,7 +98,7 @@ jobs:
             echo "gameplay_audit=$AUDIT"
             echo "overall=$OVERALL"
             echo
-            tail -n 260 "$RUNNER_TEMP/premium-v7-verification.log"
+            if [[ -f "$RUNNER_TEMP/premium-v7-verification.log" ]]; then tail -n 260 "$RUNNER_TEMP/premium-v7-verification.log"; else echo "verification_log=missing"; fi
           } > "$OUT"
           cat "$OUT"
           git config user.name 'HoldWise Premium Bot'
