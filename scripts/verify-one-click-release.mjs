@@ -19,7 +19,7 @@ for (const item of required) {
 const yaml = fs.readFileSync(path.join(root, 'codemagic.yaml'), 'utf8');
 for (const expected of [
   'holdwise-ios-testflight:',
-  'feature/holdwise-light-premium-v6',
+  'feature/holdwise-casino-premium-v7',
   'BUNDLE_ID: com.willywill.holdwiseai',
   'MARKETING_VERSION: 1.4.0',
   'APPLE_TEAM_ID: CY5N965N53',
