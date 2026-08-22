@@ -8,6 +8,7 @@ declare global {
         holdwiseStoreKit?: { postMessage: (message: any) => void };
       };
     };
+    webkitAudioContext?: typeof AudioContext;
     HoldWiseStoreKit?: Record<string, (payload?: any) => any>;
     HoldWisePlayBilling?: Record<string, (payload?: any) => any>;
   }
