@@ -20,7 +20,6 @@ function writeLocalJson(key, value) {
   if (value !== undefined && value !== null) localStorage.setItem(key, JSON.stringify(value));
 }
 
-
 const defaultAccessibility = {
   largeCardMode: false,
   highContrast: false,
@@ -35,6 +34,9 @@ const defaultAccessibility = {
 
 const defaultSettings = {
   soundEffects: true,
+  casinoAmbience: "off", // off | low | high
+  rotatingBackgrounds: true,
+  backgroundMotion: true,
   voiceEnabled: "ask-later", // enabled | text-only | ask-later
   theme: "light",
   mascot: "ace", // mascot id | "none"
@@ -71,9 +73,13 @@ const AppContext = createContext(null);
 
 export function AppProvider({ children }) {
   const persisted = loadState();
-  const [profile, setProfile] = useState(persisted?.profile || defaultProfile);
-  const [accessibility, setAccessibility] = useState(persisted?.accessibility || defaultAccessibility);
-  const [settings, setSettings] = useState(persisted?.settings || defaultSettings);
+  const [profile, setProfile] = useState({ ...defaultProfile, ...(persisted?.profile || {}) });
+  const [accessibility, setAccessibility] = useState({ ...defaultAccessibility, ...(persisted?.accessibility || {}) });
+  const [settings, setSettings] = useState({
+    ...defaultSettings,
+    ...(persisted?.settings || {}),
+    notifications: { ...defaultSettings.notifications, ...(persisted?.settings?.notifications || {}) },
+  });
   const [premium, setPremium] = useState({ status: "free", platform: null, productId: null, verified: false });
   const [coachUsage, setCoachUsage] = useState(() => {
     const saved = persisted?.coachUsage;
@@ -153,7 +159,11 @@ export function AppProvider({ children }) {
           cloudRecordId.current = record.id;
           if (record.profile) setProfile((current) => ({ ...current, ...record.profile }));
           if (record.accessibility) setAccessibility((current) => ({ ...current, ...record.accessibility }));
-          if (record.settings) setSettings((current) => ({ ...current, ...record.settings }));
+          if (record.settings) setSettings((current) => ({
+            ...current,
+            ...record.settings,
+            notifications: { ...current.notifications, ...(record.settings.notifications || {}) },
+          }));
           if (record.coachUsage?.date) setCoachUsage(record.coachUsage);
           for (const [field, key] of Object.entries(CLOUD_LOCAL_KEYS)) writeLocalJson(key, record[field]);
         }
