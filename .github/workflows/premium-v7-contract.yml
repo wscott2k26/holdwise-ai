@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - feature/holdwise-casino-premium-v7
+    paths:
+      - .release/premium-v7-trigger.txt
   workflow_dispatch:
 
 permissions:
